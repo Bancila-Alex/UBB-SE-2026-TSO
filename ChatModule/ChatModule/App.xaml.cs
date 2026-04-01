@@ -16,6 +16,7 @@ using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using System.Configuration;
+using System.Diagnostics;
 using ChatModule.Repositories;
 
 // To learn more about WinUI, the WinUI project structure,

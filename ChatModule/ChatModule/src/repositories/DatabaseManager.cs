@@ -9,7 +9,6 @@ using Microsoft.Data.SqlClient;
 
 namespace ChatModule.Repositories
 {
-   
     public class DatabaseManager
     {
         public string ConnectionString { get; }
@@ -26,7 +25,7 @@ namespace ChatModule.Repositories
             await using var connection = new SqlConnection(ConnectionString);
             await connection.OpenAsync();
 
-            const string sql = "SELECT * FROM users";
+            const string sql = "SELECT Id, Username, Email, PasswordHash, AvatarUrl, Bio, Status, Birthday, Phone FROM Users;";
             await using var command = new SqlCommand(sql, connection);
             await using var reader = await command.ExecuteReaderAsync();
 
@@ -34,15 +33,15 @@ namespace ChatModule.Repositories
             {
                 users.Add(new User
                 {
-                    Id = reader.GetGuid("id"),
-                    Username = reader.GetString("username"),
-                    Email = reader.GetString("email"),
-                    PasswordHash = reader.GetString("password_hash"),
-                    AvatarUrl = reader.IsDBNull(reader.GetOrdinal("avatar_url")) ? null : reader.GetString("avatar_url"),
-                    Bio = reader.IsDBNull(reader.GetOrdinal("bio")) ? null : reader.GetString("bio"),
-                    Status = (UserStatus)reader.GetInt32("status"),
-                    Birthday = reader.IsDBNull(reader.GetOrdinal("birthday")) ? null : reader.GetDateTime("birthday"),
-                    Phone = reader.IsDBNull(reader.GetOrdinal("phone")) ? null : reader.GetString("phone"),
+                    Id = (Guid)reader["Id"],
+                    Username = (string)reader["Username"],
+                    Email = (string)reader["Email"],
+                    PasswordHash = (string)reader["PasswordHash"],
+                    AvatarUrl = reader["AvatarUrl"] as string,
+                    Bio = reader["Bio"] as string,
+                    Status = (UserStatus)(byte)reader["Status"],
+                    Birthday = reader["Birthday"] != DBNull.Value ? (DateTime)reader["Birthday"] : null,
+                    Phone = reader["Phone"] as string
                 });
             }
 
@@ -56,7 +55,7 @@ namespace ChatModule.Repositories
             await using var connection = new SqlConnection(ConnectionString);
             await connection.OpenAsync();
 
-            const string sql = "SELECT * FROM messages";
+            const string sql = "SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId FROM Messages;";
             await using var command = new SqlCommand(sql, connection);
             await using var reader = await command.ExecuteReaderAsync();
 
@@ -64,16 +63,16 @@ namespace ChatModule.Repositories
             {
                 messages.Add(new Message
                 {
-                    Id = reader.GetGuid("id"),
-                    ConversationId = reader.GetGuid("conversation_id"),
-                    UserId = reader.IsDBNull(reader.GetOrdinal("user_id")) ? null : reader.GetGuid("user_id"),
-                    Content = reader.IsDBNull(reader.GetOrdinal("content")) ? null : reader.GetString("content"),
-                    CreatedAt = reader.GetDateTime("created_at"),
-                    ReplyToId = reader.IsDBNull(reader.GetOrdinal("reply_to_id")) ? null : reader.GetGuid("reply_to_id"),
-                    IsEdited = reader.GetBoolean("is_edited"),
-                    IsDeleted = reader.GetBoolean("is_deleted"),
-                    MessageType = (MessageType)reader.GetInt32("message_type"),
-                    ParentMessageId = reader.IsDBNull(reader.GetOrdinal("parent_message_id")) ? null : reader.GetGuid("parent_message_id"),
+                    Id = (Guid)reader["Id"],
+                    ConversationId = (Guid)reader["ConversationId"],
+                    UserId = reader["UserId"] != DBNull.Value ? (Guid)reader["UserId"] : null,
+                    Content = reader["Content"] as string,
+                    CreatedAt = (DateTime)reader["CreatedAt"],
+                    ReplyToId = reader["ReplyToId"] != DBNull.Value ? (Guid)reader["ReplyToId"] : null,
+                    IsEdited = (bool)reader["IsEdited"],
+                    IsDeleted = (bool)reader["IsDeleted"],
+                    MessageType = (MessageType)(byte)reader["MessageType"],
+                    ParentMessageId = reader["ParentMessageId"] != DBNull.Value ? (Guid)reader["ParentMessageId"] : null,
                 });
             }
 
@@ -87,7 +86,7 @@ namespace ChatModule.Repositories
             await using var connection = new SqlConnection(ConnectionString);
             await connection.OpenAsync();
 
-            const string sql = "SELECT * FROM conversations";
+            const string sql = "SELECT Id, Type, Title, IconUrl, CreatedBy, PinnedMessageId FROM Conversations;";
             await using var command = new SqlCommand(sql, connection);
             await using var reader = await command.ExecuteReaderAsync();
 
@@ -95,12 +94,12 @@ namespace ChatModule.Repositories
             {
                 conversations.Add(new Conversation
                 {
-                    Id = reader.GetGuid("id"),
-                    Type = (ConversationType)reader.GetInt32("type"),
-                    Title = reader.IsDBNull(reader.GetOrdinal("title")) ? null : reader.GetString("title"),
-                    IconUrl = reader.IsDBNull(reader.GetOrdinal("icon_url")) ? null : reader.GetString("icon_url"),
-                    CreatedBy = reader.GetGuid("created_by"),
-                    PinnedMessageId = reader.IsDBNull(reader.GetOrdinal("pinned_message_id")) ? null : reader.GetGuid("pinned_message_id"),
+                    Id = (Guid)reader["Id"],
+                    Type = (ConversationType)(byte)reader["Type"],
+                    Title = reader["Title"] as string,
+                    IconUrl = reader["IconUrl"] as string,
+                    CreatedBy = (Guid)reader["CreatedBy"],
+                    PinnedMessageId = reader["PinnedMessageId"] != DBNull.Value ? (Guid)reader["PinnedMessageId"] : null,
                 });
             }
 
@@ -114,7 +113,7 @@ namespace ChatModule.Repositories
             await using var connection = new SqlConnection(ConnectionString);
             await connection.OpenAsync();
 
-            const string sql = "SELECT * FROM participants";
+            const string sql = "SELECT Id, ConversationId, UserId, JoinedAt, Role, LastReadMessageId, TimeoutUntil, IsFavourite FROM Participants;";
             await using var command = new SqlCommand(sql, connection);
             await using var reader = await command.ExecuteReaderAsync();
 
@@ -122,14 +121,14 @@ namespace ChatModule.Repositories
             {
                 participants.Add(new Participant
                 {
-                    Id = reader.GetGuid("id"),
-                    ConversationId = reader.GetGuid("conversation_id"),
-                    UserId = reader.GetGuid("user_id"),
-                    JoinedAt = reader.GetDateTime("joined_at"),
-                    Role = (ParticipantRole)reader.GetInt32("role"),
-                    LastReadMessageId = reader.IsDBNull(reader.GetOrdinal("last_read_message_id")) ? null : reader.GetGuid("last_read_message_id"),
-                    TimeoutUntil = reader.IsDBNull(reader.GetOrdinal("timeout_until")) ? null : reader.GetDateTime("timeout_until"),
-                    IsFavourite = reader.GetBoolean("is_favourite"),
+                    Id = (Guid)reader["Id"],
+                    ConversationId = (Guid)reader["ConversationId"],
+                    UserId = (Guid)reader["UserId"],
+                    JoinedAt = (DateTime)reader["JoinedAt"],
+                    Role = (ParticipantRole)(byte)reader["Role"],
+                    LastReadMessageId = reader["LastReadMessageId"] != DBNull.Value ? (Guid)reader["LastReadMessageId"] : null,
+                    TimeoutUntil = reader["TimeoutUntil"] != DBNull.Value ? (DateTime)reader["TimeoutUntil"] : null,
+                    IsFavourite = (bool)reader["IsFavourite"],
                 });
             }
 
@@ -143,7 +142,7 @@ namespace ChatModule.Repositories
             await using var connection = new SqlConnection(ConnectionString);
             await connection.OpenAsync();
 
-            const string sql = "SELECT * FROM friends";
+            const string sql = "SELECT Id, UserId1, UserId2, Status, IsMatch, CreatedAt FROM Friends;";
             await using var command = new SqlCommand(sql, connection);
             await using var reader = await command.ExecuteReaderAsync();
 
@@ -151,12 +150,12 @@ namespace ChatModule.Repositories
             {
                 friends.Add(new Friend
                 {
-                    Id = reader.GetGuid("id"),
-                    UserId1 = reader.GetGuid("user_id_1"),
-                    UserId2 = reader.GetGuid("user_id_2"),
-                    Status = (FriendStatus)reader.GetInt32("status"),
-                    IsMatch = reader.GetBoolean("is_match"),
-                    CreatedAt = reader.GetDateTime("created_at"),
+                    Id = (Guid)reader["Id"],
+                    UserId1 = (Guid)reader["UserId1"],
+                    UserId2 = (Guid)reader["UserId2"],
+                    Status = (FriendStatus)(byte)reader["Status"],
+                    IsMatch = (bool)reader["IsMatch"],
+                    CreatedAt = (DateTime)reader["CreatedAt"],
                 });
             }
 
