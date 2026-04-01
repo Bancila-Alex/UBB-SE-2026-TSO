@@ -172,7 +172,7 @@ namespace ChatModule.Repositories
             await command.ExecuteNonQueryAsync();
         }
 
-        public async void UpdateStatusAsync(Guid userId1, Guid userId2, FriendStatus status)
+        public async Task UpdateStatusAsync(Guid userId1, Guid userId2, FriendStatus status)
         {
             const string sql = @"
             UPDATE Friends
@@ -202,7 +202,7 @@ namespace ChatModule.Repositories
             await command.ExecuteNonQueryAsync();
         }
 
-        public async void DeleteAsync(Guid userId1, Guid userId2)
+        public async Task DeleteAsync(Guid userId1, Guid userId2)
         {
             const string sql = @"
             DELETE FROM Friends
