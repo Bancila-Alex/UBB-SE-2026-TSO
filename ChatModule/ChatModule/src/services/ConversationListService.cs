@@ -14,6 +14,7 @@ namespace ChatModule.Services
         private readonly ConversationRepository _conversationRepository;
         private readonly ParticipantRepository _participantRepository;
         private readonly MessageRepository _messageRepository;
+        private readonly UserRepository _userRepository;
 
         public ConversationListService(
             ConversationRepository conversationRepository,
@@ -24,7 +25,7 @@ namespace ChatModule.Services
             _conversationRepository = conversationRepository;
             _participantRepository = participantRepository;
             _messageRepository = messageRepository;
-            _ = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         }
 
         public async Task<List<Conversation>> GetAllAsync(Guid userId)
@@ -64,6 +65,71 @@ namespace ChatModule.Services
                 .ToList();
         }
 
+        public async Task<List<Conversation>> SearchAsync(Guid userId, string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return await GetAllAsync(userId);
+            }
+
+            var normalizedQuery = query.Trim();
+            var conversations = await GetAllAsync(userId);
+            var dmUsernameByConversationId = new Dictionary<Guid, string>();
+
+            foreach (var conversation in conversations)
+            {
+                if (conversation.Type != ConversationType.Dm)
+                {
+                    continue;
+                }
+
+                var participants = await _participantRepository.GetAllForConversationAsync(conversation.Id);
+                var otherParticipant = participants.FirstOrDefault(participant => participant.UserId != userId);
+                if (otherParticipant == null)
+                {
+                    continue;
+                }
+
+                var otherUser = await _userRepository.GetByIdAsync(otherParticipant.UserId);
+                if (otherUser == null)
+                {
+                    continue;
+                }
+
+                dmUsernameByConversationId[conversation.Id] = otherUser.Username;
+            }
+
+            return conversations
+                .Where(conversation =>
+                    (conversation.Type == ConversationType.Group
+                     && conversation.Title?.Contains(normalizedQuery, StringComparison.OrdinalIgnoreCase) == true)
+                    || (conversation.Type == ConversationType.Dm
+                        && dmUsernameByConversationId.TryGetValue(conversation.Id, out var username)
+                        && username.Contains(normalizedQuery, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+        }
+
+        public async Task SetFavouriteAsync(Guid conversationId, Guid userId, bool isFavourite)
+        {
+            await _participantRepository.UpdateFavouriteAsync(conversationId, userId, isFavourite);
+        }
+
+        public async Task<int> GetUnreadCountAsync(Guid conversationId, Guid userId)
+        {
+            var participant = await _participantRepository.GetAsync(conversationId, userId);
+            if (participant == null)
+            {
+                return 0;
+            }
+
+            return await GetUnreadCountForParticipantAsync(conversationId, participant);
+        }
+
+        public async Task<Message?> GetLastMessageAsync(Guid conversationId)
+        {
+            return await _messageRepository.GetLastMessageAsync(conversationId);
+        }
+
         public async Task<List<Conversation>> GetUnreadAsync(Guid userId)
         {
             var conversations = await GetAllAsync(userId);
@@ -84,28 +150,25 @@ namespace ChatModule.Services
                     continue;
                 }
 
-                if (participant.LastReadMessageId.HasValue)
-                {
-                    var unreadCount = await _messageRepository.CountUnreadAsync(
-                        conversation.Id,
-                        participant.LastReadMessageId.Value);
-
-                    if (unreadCount > 0)
-                    {
-                        unreadConversations.Add(conversation);
-                    }
-
-                    continue;
-                }
-
-                var lastMessage = await _messageRepository.GetLastMessageAsync(conversation.Id);
-                if (lastMessage != null)
+                var unreadCount = await GetUnreadCountForParticipantAsync(conversation.Id, participant);
+                if (unreadCount > 0)
                 {
                     unreadConversations.Add(conversation);
                 }
             }
 
             return unreadConversations;
+        }
+
+        private async Task<int> GetUnreadCountForParticipantAsync(Guid conversationId, Participant participant)
+        {
+            if (participant.LastReadMessageId.HasValue)
+            {
+                return await _messageRepository.CountUnreadAsync(conversationId, participant.LastReadMessageId.Value);
+            }
+
+            var lastMessage = await _messageRepository.GetLastMessageAsync(conversationId);
+            return lastMessage == null ? 0 : 1;
         }
     }
 }
