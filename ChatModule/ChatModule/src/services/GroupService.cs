@@ -94,23 +94,31 @@ namespace ChatModule.Services
 
         public async Task LeaveGroupAsync(Guid conversationId, Guid userId)
         {
-            var participant = await _participantRepo.GetAsync(conversationId, userId)
+            var leavingParticipant = await _participantRepo.GetAsync(conversationId, userId)
                 ?? throw new InvalidOperationException("You are not a member of this conversation.");
 
             await _participantRepo.DeleteAsync(conversationId, userId);
 
-            var remaining = await _participantRepo.GetAllForConversationAsync(conversationId);
+            var remainingParticipants = await _participantRepo.GetAllForConversationAsync(conversationId);
 
-            if (remaining.Count == 0)
+            if (remainingParticipants.Count == 0)
             {
                 await _convRepo.DeleteAsync(conversationId);
                 return;
             }
 
-            if (participant.Role == ParticipantRole.Admin && remaining.All(p => p.Role != ParticipantRole.Admin))
+            var isLeavingAdmin = leavingParticipant.Role == ParticipantRole.Admin;
+            var hasRemainingAdmin = remainingParticipants.Any(participant => participant.Role == ParticipantRole.Admin);
+            var shouldPromoteOldestParticipant = isLeavingAdmin && !hasRemainingAdmin;
+
+            if (shouldPromoteOldestParticipant)
             {
-                var newAdmin = remaining.OrderBy(p => p.JoinedAt).First();
-                await _participantRepo.UpdateRoleAsync(conversationId, newAdmin.UserId, ParticipantRole.Admin);
+                var promotedParticipant = remainingParticipants
+                    .OrderBy(participant => participant.JoinedAt)
+                    .ThenBy(participant => participant.UserId)
+                    .First();
+
+                await _participantRepo.UpdateRoleAsync(conversationId, promotedParticipant.UserId, ParticipantRole.Admin);
                 await WriteSystemMessageAsync(conversationId, "A new admin has been appointed.");
             }
 
