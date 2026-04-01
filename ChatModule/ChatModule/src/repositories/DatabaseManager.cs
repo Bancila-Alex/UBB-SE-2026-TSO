@@ -34,15 +34,15 @@ namespace ChatModule.Repositories
             {
                 users.Add(new User
                 {
-                    Id = reader.GetGuid("id"),
-                    Username = reader.GetString("username"),
-                    Email = reader.GetString("email"),
-                    PasswordHash = reader.GetString("password_hash"),
-                    AvatarUrl = reader.IsDBNull(reader.GetOrdinal("avatar_url")) ? null : reader.GetString("avatar_url"),
-                    Bio = reader.IsDBNull(reader.GetOrdinal("bio")) ? null : reader.GetString("bio"),
-                    Status = (UserStatus)reader.GetInt32("status"),
-                    Birthday = reader.IsDBNull(reader.GetOrdinal("birthday")) ? null : reader.GetDateTime("birthday"),
-                    Phone = reader.IsDBNull(reader.GetOrdinal("phone")) ? null : reader.GetString("phone"),
+                    Id = reader.GetGuid(reader.GetOrdinal("id")),
+                    Username = reader.GetString(reader.GetOrdinal("username")),
+                    Email = reader.GetString(reader.GetOrdinal("email")),
+                    PasswordHash = reader.GetString(reader.GetOrdinal("password_hash")),
+                    AvatarUrl = reader.IsDBNull(reader.GetOrdinal("avatar_url")) ? null : reader.GetString(reader.GetOrdinal("avatar_url")),
+                    Bio = reader.IsDBNull(reader.GetOrdinal("bio")) ? null : reader.GetString(reader.GetOrdinal("bio")),
+                    Status = (UserStatus)reader.GetInt32(reader.GetOrdinal("status")),
+                    Birthday = reader.IsDBNull(reader.GetOrdinal("birthday")) ? null : reader.GetDateTime(reader.GetOrdinal("birthday")),
+                    Phone = reader.IsDBNull(reader.GetOrdinal("phone")) ? null : reader.GetString(reader.GetOrdinal("phone")),
                 });
             }
 
@@ -64,16 +64,16 @@ namespace ChatModule.Repositories
             {
                 messages.Add(new Message
                 {
-                    Id = reader.GetGuid("id"),
-                    ConversationId = reader.GetGuid("conversation_id"),
-                    UserId = reader.IsDBNull(reader.GetOrdinal("user_id")) ? null : reader.GetGuid("user_id"),
-                    Content = reader.IsDBNull(reader.GetOrdinal("content")) ? null : reader.GetString("content"),
-                    CreatedAt = reader.GetDateTime("created_at"),
-                    ReplyToId = reader.IsDBNull(reader.GetOrdinal("reply_to_id")) ? null : reader.GetGuid("reply_to_id"),
-                    IsEdited = reader.GetBoolean("is_edited"),
-                    IsDeleted = reader.GetBoolean("is_deleted"),
-                    MessageType = (MessageType)reader.GetInt32("message_type"),
-                    ParentMessageId = reader.IsDBNull(reader.GetOrdinal("parent_message_id")) ? null : reader.GetGuid("parent_message_id"),
+                    Id = reader.GetGuid(reader.GetOrdinal("id")),
+                    ConversationId = reader.GetGuid(reader.GetOrdinal("conversation_id")),
+                    UserId = reader.IsDBNull(reader.GetOrdinal("user_id")) ? null : reader.GetGuid(reader.GetOrdinal("user_id")),
+                    Content = reader.IsDBNull(reader.GetOrdinal("content")) ? null : reader.GetString(reader.GetOrdinal("content")),
+                    CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at")),
+                    ReplyToId = reader.IsDBNull(reader.GetOrdinal("reply_to_id")) ? null : reader.GetGuid(reader.GetOrdinal("reply_to_id")),
+                    IsEdited = reader.GetBoolean(reader.GetOrdinal("is_edited")),
+                    IsDeleted = reader.GetBoolean(reader.GetOrdinal("is_deleted")),
+                    MessageType = (MessageType)reader.GetInt32(reader.GetOrdinal("message_type")),
+                    ParentMessageId = reader.IsDBNull(reader.GetOrdinal("parent_message_id")) ? null : reader.GetGuid(reader.GetOrdinal("parent_message_id")),
                 });
             }
 
@@ -95,12 +95,12 @@ namespace ChatModule.Repositories
             {
                 conversations.Add(new Conversation
                 {
-                    Id = reader.GetGuid("id"),
-                    Type = (ConversationType)reader.GetInt32("type"),
-                    Title = reader.IsDBNull(reader.GetOrdinal("title")) ? null : reader.GetString("title"),
-                    IconUrl = reader.IsDBNull(reader.GetOrdinal("icon_url")) ? null : reader.GetString("icon_url"),
-                    CreatedBy = reader.GetGuid("created_by"),
-                    PinnedMessageId = reader.IsDBNull(reader.GetOrdinal("pinned_message_id")) ? null : reader.GetGuid("pinned_message_id"),
+                    Id = reader.GetGuid(reader.GetOrdinal("id")),
+                    Type = (ConversationType)reader.GetInt32(reader.GetOrdinal("type")),
+                    Title = reader.IsDBNull(reader.GetOrdinal("title")) ? null : reader.GetString(reader.GetOrdinal("title")),
+                    IconUrl = reader.IsDBNull(reader.GetOrdinal("icon_url")) ? null : reader.GetString(reader.GetOrdinal("icon_url")),
+                    CreatedBy = reader.GetGuid(reader.GetOrdinal("created_by")),
+                    PinnedMessageId = reader.IsDBNull(reader.GetOrdinal("pinned_message_id")) ? null : reader.GetGuid(reader.GetOrdinal("pinned_message_id")),
                 });
             }
 
@@ -122,14 +122,14 @@ namespace ChatModule.Repositories
             {
                 participants.Add(new Participant
                 {
-                    Id = reader.GetGuid("id"),
-                    ConversationId = reader.GetGuid("conversation_id"),
-                    UserId = reader.GetGuid("user_id"),
-                    JoinedAt = reader.GetDateTime("joined_at"),
-                    Role = (ParticipantRole)reader.GetInt32("role"),
-                    LastReadMessageId = reader.IsDBNull(reader.GetOrdinal("last_read_message_id")) ? null : reader.GetGuid("last_read_message_id"),
-                    TimeoutUntil = reader.IsDBNull(reader.GetOrdinal("timeout_until")) ? null : reader.GetDateTime("timeout_until"),
-                    IsFavourite = reader.GetBoolean("is_favourite"),
+                    Id = reader.GetGuid(reader.GetOrdinal("id")),
+                    ConversationId = reader.GetGuid(reader.GetOrdinal("conversation_id")),
+                    UserId = reader.GetGuid(reader.GetOrdinal("user_id")),
+                    JoinedAt = reader.GetDateTime(reader.GetOrdinal("joined_at")),
+                    Role = (ParticipantRole)reader.GetInt32(reader.GetOrdinal("role")),
+                    LastReadMessageId = reader.IsDBNull(reader.GetOrdinal("last_read_message_id")) ? null : reader.GetGuid(reader.GetOrdinal("last_read_message_id")),
+                    TimeoutUntil = reader.IsDBNull(reader.GetOrdinal("timeout_until")) ? null : reader.GetDateTime(reader.GetOrdinal("timeout_until")),
+                    IsFavourite = reader.GetBoolean(reader.GetOrdinal("is_favourite")),
                 });
             }
 
@@ -151,12 +151,12 @@ namespace ChatModule.Repositories
             {
                 friends.Add(new Friend
                 {
-                    Id = reader.GetGuid("id"),
-                    UserId1 = reader.GetGuid("user_id_1"),
-                    UserId2 = reader.GetGuid("user_id_2"),
-                    Status = (FriendStatus)reader.GetInt32("status"),
-                    IsMatch = reader.GetBoolean("is_match"),
-                    CreatedAt = reader.GetDateTime("created_at"),
+                    Id = reader.GetGuid(reader.GetOrdinal("id")),
+                    UserId1 = reader.GetGuid(reader.GetOrdinal("user_id_1")),
+                    UserId2 = reader.GetGuid(reader.GetOrdinal("user_id_2")),
+                    Status = (FriendStatus)reader.GetInt32(reader.GetOrdinal("status")),
+                    IsMatch = reader.GetBoolean(reader.GetOrdinal("is_match")),
+                    CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at")),
                 });
             }
 

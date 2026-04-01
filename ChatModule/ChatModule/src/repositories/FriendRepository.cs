@@ -69,12 +69,12 @@ WHERE user_id_1 = @id OR user_id_2 = @id;";
         {
             return new Friend
             {
-                Id = reader.GetGuid("id"),
-                UserId1 = reader.GetGuid("user_id_1"),
-                UserId2 = reader.GetGuid("user_id_2"),
-                Status = (FriendStatus)reader.GetInt32("status"),
-                IsMatch = reader.GetBoolean("is_match"),
-                CreatedAt = reader.GetDateTime("created_at")
+                Id = reader.GetGuid(reader.GetOrdinal("id")),
+                UserId1 = reader.GetGuid(reader.GetOrdinal("user_id_1")),
+                UserId2 = reader.GetGuid(reader.GetOrdinal("user_id_2")),
+                Status = (FriendStatus)reader.GetInt32(reader.GetOrdinal("status")),
+                IsMatch = reader.GetBoolean(reader.GetOrdinal("is_match")),
+                CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at"))
             };
         }
     }

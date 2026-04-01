@@ -115,15 +115,15 @@ namespace ChatModule.Repositories
         {
             return new User
             {
-                Id = reader.GetGuid("id"),
-                Username = reader.GetString("username"),
-                Email = reader.GetString("email"),
-                PasswordHash = reader.GetString("password_hash"),
-                AvatarUrl = reader.IsDBNull(reader.GetOrdinal("avatar_url")) ? null : reader.GetString("avatar_url"),
-                Bio = reader.IsDBNull(reader.GetOrdinal("bio")) ? null : reader.GetString("bio"),
-                Status = (UserStatus)reader.GetInt32("status"),
-                Birthday = reader.IsDBNull(reader.GetOrdinal("birthday")) ? null : reader.GetDateTime("birthday"),
-                Phone = reader.IsDBNull(reader.GetOrdinal("phone")) ? null : reader.GetString("phone"),
+                Id = reader.GetGuid(reader.GetOrdinal("id")),
+                Username = reader.GetString(reader.GetOrdinal("username")),
+                Email = reader.GetString(reader.GetOrdinal("email")),
+                PasswordHash = reader.GetString(reader.GetOrdinal("password_hash")),
+                AvatarUrl = reader.IsDBNull(reader.GetOrdinal("avatar_url")) ? null : reader.GetString(reader.GetOrdinal("avatar_url")),
+                Bio = reader.IsDBNull(reader.GetOrdinal("bio")) ? null : reader.GetString(reader.GetOrdinal("bio")),
+                Status = (UserStatus)reader.GetInt32(reader.GetOrdinal("status")),
+                Birthday = reader.IsDBNull(reader.GetOrdinal("birthday")) ? null : reader.GetDateTime(reader.GetOrdinal("birthday")),
+                Phone = reader.IsDBNull(reader.GetOrdinal("phone")) ? null : reader.GetString(reader.GetOrdinal("phone")),
             };
         }
     }

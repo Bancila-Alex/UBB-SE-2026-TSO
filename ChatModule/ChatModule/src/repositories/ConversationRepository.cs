@@ -161,12 +161,12 @@ WHERE Id = @Id;";
         {
             return new Conversation
             {
-                Id = reader.GetGuid("id"),
-                Type = (ConversationType)reader.GetInt32("type"),
-                Title = reader.IsDBNull(reader.GetOrdinal("title")) ? null : reader.GetString("title"),
-                IconUrl = reader.IsDBNull(reader.GetOrdinal("icon_url")) ? null : reader.GetString("icon_url"),
-                CreatedBy = reader.GetGuid("created_by"),
-                PinnedMessageId = reader.IsDBNull(reader.GetOrdinal("pinned_message_id")) ? null : reader.GetGuid("pinned_message_id"),
+                Id = reader.GetGuid(reader.GetOrdinal("id")),
+                Type = (ConversationType)reader.GetInt32(reader.GetOrdinal("type")),
+                Title = reader.IsDBNull(reader.GetOrdinal("title")) ? null : reader.GetString(reader.GetOrdinal("title")),
+                IconUrl = reader.IsDBNull(reader.GetOrdinal("icon_url")) ? null : reader.GetString(reader.GetOrdinal("icon_url")),
+                CreatedBy = reader.GetGuid(reader.GetOrdinal("created_by")),
+                PinnedMessageId = reader.IsDBNull(reader.GetOrdinal("pinned_message_id")) ? null : reader.GetGuid(reader.GetOrdinal("pinned_message_id")),
             };
         }
     }
