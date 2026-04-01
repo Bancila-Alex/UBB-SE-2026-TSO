@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using ChatModule.Models;
 using ChatModule.src.domain;
 using ChatModule.src.domain.Enums;
-using MySqlConnector;
+using Microsoft.Data.SqlClient;
 
 namespace ChatModule.Repositories
 {
@@ -22,11 +22,11 @@ namespace ChatModule.Repositories
         {
             var users = new List<User>();
 
-            await using var connection = new MySqlConnection(ConnectionString);
+            await using var connection = new SqlConnection(ConnectionString);
             await connection.OpenAsync();
 
             const string sql = "SELECT * FROM users";
-            await using var command = new MySqlCommand(sql, connection);
+            await using var command = new SqlCommand(sql, connection);
             await using var reader = await command.ExecuteReaderAsync();
 
             while (await reader.ReadAsync())
@@ -52,11 +52,11 @@ namespace ChatModule.Repositories
         {
             var messages = new List<Message>();
 
-            await using var connection = new MySqlConnection(ConnectionString);
+            await using var connection = new SqlConnection(ConnectionString);
             await connection.OpenAsync();
 
             const string sql = "SELECT * FROM messages";
-            await using var command = new MySqlCommand(sql, connection);
+            await using var command = new SqlCommand(sql, connection);
             await using var reader = await command.ExecuteReaderAsync();
 
             while (await reader.ReadAsync())
@@ -83,11 +83,11 @@ namespace ChatModule.Repositories
         {
             var conversations = new List<Conversation>();
 
-            await using var connection = new MySqlConnection(ConnectionString);
+            await using var connection = new SqlConnection(ConnectionString);
             await connection.OpenAsync();
 
             const string sql = "SELECT * FROM conversations";
-            await using var command = new MySqlCommand(sql, connection);
+            await using var command = new SqlCommand(sql, connection);
             await using var reader = await command.ExecuteReaderAsync();
 
             while (await reader.ReadAsync())
@@ -110,11 +110,11 @@ namespace ChatModule.Repositories
         {
             var participants = new List<Participant>();
 
-            await using var connection = new MySqlConnection(ConnectionString);
+            await using var connection = new SqlConnection(ConnectionString);
             await connection.OpenAsync();
 
             const string sql = "SELECT * FROM participants";
-            await using var command = new MySqlCommand(sql, connection);
+            await using var command = new SqlCommand(sql, connection);
             await using var reader = await command.ExecuteReaderAsync();
 
             while (await reader.ReadAsync())
@@ -139,11 +139,11 @@ namespace ChatModule.Repositories
         {
             var friends = new List<Friend>();
 
-            await using var connection = new MySqlConnection(ConnectionString);
+            await using var connection = new SqlConnection(ConnectionString);
             await connection.OpenAsync();
 
             const string sql = "SELECT * FROM friends";
-            await using var command = new MySqlCommand(sql, connection);
+            await using var command = new SqlCommand(sql, connection);
             await using var reader = await command.ExecuteReaderAsync();
 
             while (await reader.ReadAsync())

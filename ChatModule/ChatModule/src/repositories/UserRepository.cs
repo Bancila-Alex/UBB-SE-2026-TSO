@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using ChatModule.Models;
 using ChatModule.src.domain.Enums;
-using MySqlConnector;
+using Microsoft.Data.SqlClient;
 
 namespace ChatModule.Repositories
 {
@@ -17,11 +17,11 @@ namespace ChatModule.Repositories
 
         public async Task<User?> GetByIdAsync(Guid id)
         {
-            await using var connection = new MySqlConnection(_db.ConnectionString);
+            await using var connection = new SqlConnection(_db.ConnectionString);
             await connection.OpenAsync();
 
-            const string sql = "SELECT * FROM users WHERE id = @id LIMIT 1";
-            await using var command = new MySqlCommand(sql, connection);
+            const string sql = "SELECT TOP 1 * FROM Users WHERE Id = @id";
+            await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@id", id);
 
             await using var reader = await command.ExecuteReaderAsync();
@@ -35,11 +35,11 @@ namespace ChatModule.Repositories
 
         public async Task<User?> GetByUsernameAsync(string username)
         {
-            await using var connection = new MySqlConnection(_db.ConnectionString);
+            await using var connection = new SqlConnection(_db.ConnectionString);
             await connection.OpenAsync();
 
-            const string sql = "SELECT * FROM users WHERE username = @username LIMIT 1";
-            await using var command = new MySqlCommand(sql, connection);
+            const string sql = "SELECT TOP 1 * FROM Users WHERE Username = @username";
+            await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@username", username);
 
             await using var reader = await command.ExecuteReaderAsync();
@@ -53,11 +53,11 @@ namespace ChatModule.Repositories
 
         public async Task<User?> GetByEmailAsync(string email)
         {
-            await using var connection = new MySqlConnection(_db.ConnectionString);
+            await using var connection = new SqlConnection(_db.ConnectionString);
             await connection.OpenAsync();
 
-            const string sql = "SELECT * FROM users WHERE email = @email LIMIT 1";
-            await using var command = new MySqlCommand(sql, connection);
+            const string sql = "SELECT TOP 1 * FROM Users WHERE Email = @email";
+            await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@email", email);
 
             await using var reader = await command.ExecuteReaderAsync();
@@ -69,7 +69,7 @@ namespace ChatModule.Repositories
             return MapUser(reader);
         }
 
-        private static User MapUser(MySqlDataReader reader)
+        private static User MapUser(SqlDataReader reader)
         {
             return new User
             {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using ChatModule.Models;
 using ChatModule.src.domain.Enums;
-using MySqlConnector;
+using Microsoft.Data.SqlClient;
 
 namespace ChatModule.Repositories
 {
@@ -24,10 +24,10 @@ FROM friends
 WHERE (user_id_1 = @U1 AND user_id_2 = @U2)
    OR (user_id_1 = @U2 AND user_id_2 = @U1);";
 
-            await using var connection = new MySqlConnection(_db.ConnectionString);
+            await using var connection = new SqlConnection(_db.ConnectionString);
             await connection.OpenAsync();
 
-            await using var command = new MySqlCommand(sql, connection);
+            await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@U1", userId1);
             command.Parameters.AddWithValue("@U2", userId2);
 
@@ -49,10 +49,10 @@ WHERE user_id_1 = @id OR user_id_2 = @id;";
 
             var result = new List<Friend>();
 
-            await using var connection = new MySqlConnection(_db.ConnectionString);
+            await using var connection = new SqlConnection(_db.ConnectionString);
             await connection.OpenAsync();
 
-            await using var command = new MySqlCommand(sql, connection);
+            await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@id", userId);
 
             await using var reader = await command.ExecuteReaderAsync();
@@ -64,7 +64,7 @@ WHERE user_id_1 = @id OR user_id_2 = @id;";
             return result;
         }
 
-        private static Friend MapFriend(MySqlDataReader reader)
+        private static Friend MapFriend(SqlDataReader reader)
         {
             return new Friend
             {
