@@ -1,12 +1,13 @@
-﻿using System;
+﻿using BCrypt.Net;
+using ChatModule.Models;
+using ChatModule.Repositories;
+using ChatModule.src.domain.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using System.Security.Cryptography;
-using BCrypt.Net;
-using ChatModule.Repositories;
-using ChatModule.Models;
 
 namespace ChatModule.Services
 {
@@ -35,6 +36,39 @@ namespace ChatModule.Services
 
             if (!VerifyPassword(password, user.PasswordHash))
                 return null;
+
+            return user;
+        }
+
+        public async Task<User> RegisterAsync(
+            string username,
+            string email,
+            string password,
+            string phone,
+            DateTime? birthday,
+            string? avatarUrl)
+        {
+            if (await _userRepository.GetByUsernameAsync(username) != null)
+                throw new InvalidOperationException("Username is already taken.");
+
+            if (await _userRepository.GetByEmailAsync(email) != null)
+                throw new InvalidOperationException("Email is already taken.");
+
+            var passwordHash = HashPassword(password);
+
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Username = username,
+                Email = email,
+                PasswordHash = passwordHash,
+                Phone = phone,
+                Birthday = birthday,
+                AvatarUrl = avatarUrl,
+                Status = UserStatus.Offline
+            };
+
+            await _userRepository.CreateAsync(user);
 
             return user;
         }
