@@ -1,7 +1,9 @@
-using System;
-using System.Threading.Tasks;
 using ChatModule.Models;
+using ChatModule.src.domain.Enums;
 using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace ChatModule.Repositories
 {
@@ -53,6 +55,82 @@ WHERE Id = @Id;";
             command.Parameters.AddWithValue("@Id", id);
 
             await command.ExecuteNonQueryAsync();
+        }
+
+        public async Task<List<Message>> GetReactionsForMessageAsync(Guid parentMessageId)
+        {
+            var result = new List<Message>();
+
+            await using var connection = new SqlConnection(_db.ConnectionString);
+            await connection.OpenAsync();
+
+            const string sql = @"
+SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId
+FROM Messages
+WHERE MessageType = @ReactionType AND ParentMessageId = @ParentId;";
+
+            await using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@ReactionType", (int)MessageType.Reaction);
+            command.Parameters.AddWithValue("@ParentId", parentMessageId);
+
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var message = new Message
+                {
+                    Id = reader.GetGuid(reader.GetOrdinal("Id")),
+                    ConversationId = reader.GetGuid(reader.GetOrdinal("ConversationId")),
+                    UserId = reader.IsDBNull(reader.GetOrdinal("UserId")) ? null : reader.GetGuid(reader.GetOrdinal("UserId")),
+                    Content = reader.IsDBNull(reader.GetOrdinal("Content")) ? null : reader.GetString(reader.GetOrdinal("Content")),
+                    CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt")),
+                    ReplyToId = reader.IsDBNull(reader.GetOrdinal("ReplyToId")) ? null : reader.GetGuid(reader.GetOrdinal("ReplyToId")),
+                    IsEdited = reader.GetBoolean(reader.GetOrdinal("IsEdited")),
+                    IsDeleted = reader.GetBoolean(reader.GetOrdinal("IsDeleted")),
+                    MessageType = (MessageType)reader.GetInt32(reader.GetOrdinal("MessageType")),
+                    ParentMessageId = reader.IsDBNull(reader.GetOrdinal("ParentMessageId")) ? null : reader.GetGuid(reader.GetOrdinal("ParentMessageId"))
+                };
+                result.Add(message);
+            }
+
+            return result;
+        }
+
+        public async Task<List<Message>> GetSystemMessagesAsync(Guid conversationId)
+        {
+            var result = new List<Message>();
+
+            await using var connection = new SqlConnection(_db.ConnectionString);
+            await connection.OpenAsync();
+
+            const string sql = @"
+SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId
+FROM Messages
+WHERE ConversationId = @ConversationId AND MessageType = @SystemType;";
+
+            await using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@ConversationId", conversationId);
+            command.Parameters.AddWithValue("@SystemType", (int)MessageType.System);
+
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var message = new Message
+                {
+                    Id = reader.GetGuid(reader.GetOrdinal("Id")),
+                    ConversationId = reader.GetGuid(reader.GetOrdinal("ConversationId")),
+                    UserId = reader.IsDBNull(reader.GetOrdinal("UserId")) ? null : reader.GetGuid(reader.GetOrdinal("UserId")),
+                    Content = reader.IsDBNull(reader.GetOrdinal("Content")) ? null : reader.GetString(reader.GetOrdinal("Content")),
+                    CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt")),
+                    ReplyToId = reader.IsDBNull(reader.GetOrdinal("ReplyToId")) ? null : reader.GetGuid(reader.GetOrdinal("ReplyToId")),
+                    IsEdited = reader.GetBoolean(reader.GetOrdinal("IsEdited")),
+                    IsDeleted = reader.GetBoolean(reader.GetOrdinal("IsDeleted")),
+                    MessageType = (MessageType)reader.GetInt32(reader.GetOrdinal("MessageType")),
+                    ParentMessageId = reader.IsDBNull(reader.GetOrdinal("ParentMessageId")) ? null : reader.GetGuid(reader.GetOrdinal("ParentMessageId"))
+                };
+                result.Add(message);
+            }
+
+            return result;
         }
 
         public async Task SetEditedAsync(Guid id)
