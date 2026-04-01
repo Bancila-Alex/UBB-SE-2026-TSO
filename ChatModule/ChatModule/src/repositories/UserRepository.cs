@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using ChatModule.Models;
 using ChatModule.src.domain.Enums;
@@ -67,6 +68,46 @@ namespace ChatModule.Repositories
             }
 
             return MapUser(reader);
+        }
+
+        public async Task<List<User>> GetAllAsync()
+        {
+            var users = new List<User>();
+
+            await using var connection = new SqlConnection(_db.ConnectionString);
+            await connection.OpenAsync();
+
+            const string sql = "SELECT * FROM Users";
+            await using var command = new SqlCommand(sql, connection);
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                users.Add(MapUser(reader));
+            }
+
+            return users;
+        }
+
+        public async Task<List<User>> SearchByUsernameAsync(string query)
+        {
+            var users = new List<User>();
+
+            await using var connection = new SqlConnection(_db.ConnectionString);
+            await connection.OpenAsync();
+
+            const string sql = "SELECT * FROM Users WHERE Username LIKE @query";
+            await using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@query", $"%{query}%");
+
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                users.Add(MapUser(reader));
+            }
+
+            return users;
         }
 
         private static User MapUser(SqlDataReader reader)
