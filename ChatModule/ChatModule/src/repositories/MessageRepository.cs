@@ -22,8 +22,8 @@ namespace ChatModule.Repositories
             await connection.OpenAsync();
 
             const string sql = @"
-INSERT INTO Messages (Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId)
-VALUES (@Id, @ConversationId, @UserId, @Content, @CreatedAt, @ReplyToId, @IsEdited, @IsDeleted, @MessageType, @ParentMessageId);";
+            INSERT INTO Messages (Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId)
+            VALUES (@Id, @ConversationId, @UserId, @Content, @CreatedAt, @ReplyToId, @IsEdited, @IsDeleted, @MessageType, @ParentMessageId);";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@Id", m.Id);
@@ -46,9 +46,9 @@ VALUES (@Id, @ConversationId, @UserId, @Content, @CreatedAt, @ReplyToId, @IsEdit
             await connection.OpenAsync();
 
             const string sql = @"
-UPDATE Messages
-SET Content = @Content
-WHERE Id = @Id;";
+            UPDATE Messages
+            SET Content = @Content
+            WHERE Id = @Id;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@Content", newContent);
@@ -65,9 +65,9 @@ WHERE Id = @Id;";
             await connection.OpenAsync();
 
             const string sql = @"
-SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId
-FROM Messages
-WHERE MessageType = @ReactionType AND ParentMessageId = @ParentId;";
+            SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId
+            FROM Messages
+            WHERE MessageType = @ReactionType AND ParentMessageId = @ParentId;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@ReactionType", (int)MessageType.Reaction);
@@ -103,9 +103,9 @@ WHERE MessageType = @ReactionType AND ParentMessageId = @ParentId;";
             await connection.OpenAsync();
 
             const string sql = @"
-SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId
-FROM Messages
-WHERE ConversationId = @ConversationId AND MessageType = @SystemType;";
+            SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId
+            FROM Messages
+            WHERE ConversationId = @ConversationId AND MessageType = @SystemType;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@ConversationId", conversationId);
@@ -139,9 +139,9 @@ WHERE ConversationId = @ConversationId AND MessageType = @SystemType;";
             await connection.OpenAsync();
 
             const string sql = @"
-UPDATE Messages
-SET IsEdited = 1
-WHERE Id = @Id;";
+            UPDATE Messages
+            SET IsEdited = 1
+            WHERE Id = @Id;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@Id", id);
@@ -155,9 +155,9 @@ WHERE Id = @Id;";
             await connection.OpenAsync();
 
             const string sql = @"
-UPDATE Messages
-SET IsDeleted = 1
-WHERE Id = @Id;";
+            UPDATE Messages
+            SET IsDeleted = 1
+            WHERE Id = @Id;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@Id", id);
