@@ -9,6 +9,7 @@
     <UserControl.Resources>
         <converters:NullToVisibilityConverter x:Key="NullToVisibility" />
         <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+        <converters:InverseBooleanConverter x:Key="InverseBoolean" />
 
         <DataTemplate x:Key="MessageItemTemplate">
             <Grid Margin="0,4" ColumnSpacing="10">
@@ -138,7 +139,7 @@
             Padding="8"
             SelectionMode="None" />
 
-        <!-- Reply Preview Bar -->
+        <!-- Reply Context Strip -->
         <Border
             Grid.Row="2"
             Background="#2E236C"
@@ -174,34 +175,54 @@
             </Grid>
         </Border>
 
-        <!-- Input Area -->
+        <!-- Bottom Input Section -->
         <Grid Grid.Row="3" Background="#2E236C" Padding="8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBox
-                Grid.Column="0"
-                Text="{x:Bind ViewModel.MessageInput, Mode=TwoWay}"
-                PlaceholderText="Type a message..."
-                Background="#433D8B"
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock
+                Grid.Row="0"
+                Text="{x:Bind ViewModel.InputDisabledReason, Mode=OneWay}"
                 Foreground="#C8ACD6"
                 FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
-                FontSize="14"
-                BorderThickness="0"
-                CornerRadius="4"
-                Padding="10,8"
-                IsEnabled="{x:Bind ViewModel.IsInputDisabled, Mode=OneWay}" />
-            <Button
-                Grid.Column="1"
-                Content="Send"
-                Command="{x:Bind ViewModel.SendCommand}"
-                Background="#433D8B"
-                Foreground="#C8ACD6"
-                FontFamily="ms-appx:///Assets/Fonts/SourceSans3-Regular.ttf#Source Sans 3"
-                Margin="6,0,0,0"
-                Padding="16,8"
-                CornerRadius="4" />
+                FontSize="12"
+                Opacity="0.9"
+                Margin="2,0,2,6"
+                Visibility="{x:Bind ViewModel.IsInputDisabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBox
+                    Grid.Column="0"
+                    Text="{x:Bind ViewModel.MessageInput, Mode=TwoWay}"
+                    PlaceholderText="Type a message..."
+                    Background="#433D8B"
+                    Foreground="#C8ACD6"
+                    FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                    FontSize="14"
+                    BorderThickness="0"
+                    CornerRadius="4"
+                    Padding="10,8"
+                    IsEnabled="{x:Bind ViewModel.IsInputDisabled, Mode=OneWay, Converter={StaticResource InverseBoolean}}" />
+
+                <Button
+                    Grid.Column="1"
+                    Content="Send"
+                    Command="{x:Bind ViewModel.SendCommand}"
+                    IsEnabled="{x:Bind ViewModel.IsInputDisabled, Mode=OneWay, Converter={StaticResource InverseBoolean}}"
+                    Background="#433D8B"
+                    Foreground="#C8ACD6"
+                    FontFamily="ms-appx:///Assets/Fonts/SourceSans3-Regular.ttf#Source Sans 3"
+                    Margin="6,0,0,0"
+                    Padding="16,8"
+                    CornerRadius="4" />
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>
