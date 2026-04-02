@@ -15,5 +15,6 @@ namespace ChatModule.Models
         public bool IsDeleted { get; set; }
         public MessageType MessageType { get; set; }
         public Guid? ParentMessageId { get; set; }
+        public string? SenderUsername { get; set; }
     }
 }

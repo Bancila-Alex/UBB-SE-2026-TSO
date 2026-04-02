@@ -31,7 +31,21 @@ namespace ChatModule.Services
                 throw new InvalidOperationException("Participant not found for this conversation.");
             }
 
-            return await _messageRepository.SearchInConversationAsync(conversationId, query);
+            var messages = await _messageRepository.SearchInConversationAsync(conversationId, query);
+            foreach (var message in messages)
+            {
+                if (message.UserId.HasValue)
+                {
+                    var sender = await _userRepository.GetByIdAsync(message.UserId.Value);
+                    message.SenderUsername = sender?.Username ?? "Unknown User";
+                }
+                else
+                {
+                    message.SenderUsername = "System";
+                }
+            }
+
+            return messages;
         }
 
         public async Task<List<User>> SearchUsersAsync(string query)
