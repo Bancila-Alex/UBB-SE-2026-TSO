@@ -1,16 +1,20 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using System.Windows.Input;
 using ChatModule.Services;
 using ChatModule.src.domain;
-using ChatModule.ViewModels;
 
 namespace ChatModule.ViewModels
 {
     public class ConversationListViewModel : BaseViewModel
     {
-        private readonly ConversationListService _convListService;
+        public const string AllTab = "All";
+        public const string DirectMessagesTab = "Direct Messages";
+        public const string GroupsTab = "Groups";
+        public const string FavoritesTab = "Favorites";
+        public const string UnreadTab = "Unread";
+
+        private readonly ConversationListService _conversationListService;
         private readonly Guid _currentUserId;
 
         public ObservableCollection<Conversation> Conversations { get; } = new();
@@ -33,12 +37,24 @@ namespace ChatModule.ViewModels
             }
         }
 
-        private string _activeTab = "All";
+        private string _activeTab = AllTab;
         public string ActiveTab
         {
             get => _activeTab;
-            set => Set(ref _activeTab, value);
+            set
+            {
+                if (Set(ref _activeTab, value))
+                {
+                    OnActiveTabChanged();
+                }
+            }
         }
+
+        public bool IsAllTabActive => string.Equals(_activeTab, AllTab, StringComparison.Ordinal);
+        public bool IsDirectMessagesTabActive => string.Equals(_activeTab, DirectMessagesTab, StringComparison.Ordinal);
+        public bool IsGroupsTabActive => string.Equals(_activeTab, GroupsTab, StringComparison.Ordinal);
+        public bool IsFavoritesTabActive => string.Equals(_activeTab, FavoritesTab, StringComparison.Ordinal);
+        public bool IsUnreadTabActive => string.Equals(_activeTab, UnreadTab, StringComparison.Ordinal);
 
         private bool _isLoading;
         public bool IsLoading
@@ -47,15 +63,22 @@ namespace ChatModule.ViewModels
             set => Set(ref _isLoading, value);
         }
 
-        public ICommand             LoadCommand      { get; }
+        public RelayCommand         LoadCommand      { get; }
         public RelayCommand<string> SwitchTabCommand { get; }
+        public RelayCommand         NewGroupCommand  { get; }
+        public RelayCommand         NewDmCommand     { get; }
 
-        public ConversationListViewModel(ConversationListService convListService, Guid currentUserId)
+        public event Action? NewGroupRequested;
+        public event Action? NewDmRequested;
+
+        public ConversationListViewModel(ConversationListService conversationListService, Guid currentUserId)
         {
-            _convListService = convListService;
-            _currentUserId   = currentUserId;
-            LoadCommand      = new RelayCommand(LoadTabAsync);
+            _conversationListService = conversationListService ?? throw new ArgumentNullException(nameof(conversationListService));
+            _currentUserId = currentUserId;
+            LoadCommand = new RelayCommand(LoadTabAsync);
             SwitchTabCommand = new RelayCommand<string>(SwitchTabAsync);
+            NewGroupCommand = new RelayCommand(RequestNewGroupAsync);
+            NewDmCommand = new RelayCommand(RequestNewDmAsync);
         }
 
         private async Task LoadTabAsync()
@@ -63,13 +86,14 @@ namespace ChatModule.ViewModels
             IsLoading = true;
             try
             {
-                var results = _activeTab switch
+                var results = ActiveTab switch
                 {
-                    "DMs"        => await _convListService.GetDmsAsync(_currentUserId),
-                    "Groups"     => await _convListService.GetGroupsAsync(_currentUserId),
-                    "Unread"     => await _convListService.GetUnreadAsync(_currentUserId),
-                    "Favourites" => await _convListService.GetFavouritesAsync(_currentUserId),
-                    _            => await _convListService.GetAllAsync(_currentUserId),
+                    AllTab => await _conversationListService.GetAllAsync(_currentUserId),
+                    DirectMessagesTab => await _conversationListService.GetDmsAsync(_currentUserId),
+                    GroupsTab => await _conversationListService.GetGroupsAsync(_currentUserId),
+                    FavoritesTab => await _conversationListService.GetFavouritesAsync(_currentUserId),
+                    UnreadTab => await _conversationListService.GetUnreadAsync(_currentUserId),
+                    _ => await _conversationListService.GetAllAsync(_currentUserId),
                 };
 
                 Conversations.Clear();
@@ -93,7 +117,7 @@ namespace ChatModule.ViewModels
             IsLoading = true;
             try
             {
-                var results = await _convListService.SearchAsync(_currentUserId, _searchQuery);
+                var results = await _conversationListService.SearchAsync(_currentUserId, _searchQuery);
                 Conversations.Clear();
                 foreach (var c in results)
                     Conversations.Add(c);
@@ -110,6 +134,27 @@ namespace ChatModule.ViewModels
             _searchQuery = string.Empty;
             OnPropertyChanged(nameof(SearchQuery));
             await LoadTabAsync();
+        }
+
+        private Task RequestNewGroupAsync()
+        {
+            NewGroupRequested?.Invoke();
+            return Task.CompletedTask;
+        }
+
+        private Task RequestNewDmAsync()
+        {
+            NewDmRequested?.Invoke();
+            return Task.CompletedTask;
+        }
+
+        private void OnActiveTabChanged()
+        {
+            OnPropertyChanged(nameof(IsAllTabActive));
+            OnPropertyChanged(nameof(IsDirectMessagesTabActive));
+            OnPropertyChanged(nameof(IsGroupsTabActive));
+            OnPropertyChanged(nameof(IsFavoritesTabActive));
+            OnPropertyChanged(nameof(IsUnreadTabActive));
         }
     }
 }

@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using ChatModule.Models;
 using ChatModule.Repositories;
 using ChatModule.Services;
+using ChatModule.src.domain.Enums;
 using ChatModule.ViewModels;
 
 namespace ChatModule.src.view_models
@@ -42,6 +44,8 @@ namespace ChatModule.src.view_models
         public ObservableCollection<Message> Messages { get; } = new();
 
         public ObservableCollection<User> MentionSuggestions { get; } = new();
+
+        public bool HasMentionSuggestions => MentionSuggestions.Count > 0;
 
         public Message? PinnedMessage
         {
@@ -115,6 +119,8 @@ namespace ChatModule.src.view_models
 
         public RelayCommand<User> InsertMentionCommand { get; }
 
+        public RelayCommand<Tuple<Guid, string>> ReactWithSpecificEmojiCommand { get; }
+
         public ChatViewModel(
             MessageService messageService,
             MessageInteractionService interactionService,
@@ -132,12 +138,20 @@ namespace ChatModule.src.view_models
             _conversationRepository = conversationRepository;
             _currentUserId = currentUserId;
 
+            MentionSuggestions.CollectionChanged += HandleMentionSuggestionsChanged;
+
             ReactCommand = new RelayCommand<Guid>(OpenEmojiPickerAsync);
             ScrollToMessageCommand = new RelayCommand<Guid>(ScrollToMessageAsync);
             SendCommand = new RelayCommand(SendAsync);
             CancelReplyCommand = new RelayCommand(CancelReplyAsync);
             ReplyToCommand = new RelayCommand<Guid>(ReplyToAsync);
             InsertMentionCommand = new RelayCommand<User>(InsertMentionAsync);
+            ReactWithSpecificEmojiCommand = new RelayCommand<Tuple<Guid, string>>(ReactWithSpecificEmojiAsync);
+        }
+
+        private void HandleMentionSuggestionsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            OnPropertyChanged(nameof(HasMentionSuggestions));
         }
 
         public async Task LoadAsync(Guid conversationId)
@@ -154,6 +168,8 @@ namespace ChatModule.src.view_models
                 {
                     Messages.Add(message);
                 }
+
+                await PopulateReactionCountersAsync();
 
                 var conversation = await _conversationRepository.GetByIdAsync(conversationId);
                 ConversationTitle = conversation?.Title ?? string.Empty;
@@ -218,6 +234,8 @@ namespace ChatModule.src.view_models
             {
                 Messages.Add(message);
             }
+
+            await PopulateReactionCountersAsync();
         }
 
         private Task StartEditAsync(Guid messageId)
@@ -311,6 +329,8 @@ namespace ChatModule.src.view_models
 
             var reactions = await _interactionService.GetReactionsAsync(messageId);
             ReactionsChanged?.Invoke(messageId, reactions);
+
+            await PopulateReactionCountersAsync();
         }
 
         private Task ScrollToMessageAsync(Guid messageId)
@@ -345,6 +365,41 @@ namespace ChatModule.src.view_models
             {
                 MentionSuggestions.Add(user);
             }
+        }
+
+        private async Task PopulateReactionCountersAsync()
+        {
+            foreach (var message in Messages)
+            {
+                if (message.MessageType == MessageType.Reaction)
+                {
+                    message.ReactionCounts.Clear();
+                    continue;
+                }
+
+                var reactions = await _interactionService.GetReactionsAsync(message.Id);
+                message.ReactionCounts = reactions
+                    .Where(r => !r.IsDeleted && !string.IsNullOrWhiteSpace(r.Content))
+                    .GroupBy(r => r.Content!)
+                    .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
+            }
+        }
+
+        private async Task ReactWithSpecificEmojiAsync(Tuple<Guid, string> payload)
+        {
+            var messageId = payload.Item1;
+            var emoji = payload.Item2;
+            if (messageId == Guid.Empty || string.IsNullOrWhiteSpace(emoji))
+            {
+                return;
+            }
+
+            await _interactionService.ReactToMessageAsync(messageId, _currentUserId, emoji);
+
+            var reactions = await _interactionService.GetReactionsAsync(messageId);
+            ReactionsChanged?.Invoke(messageId, reactions);
+
+            await PopulateReactionCountersAsync();
         }
 
         private Task InsertMentionAsync(User user)

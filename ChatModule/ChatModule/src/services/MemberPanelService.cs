@@ -44,7 +44,7 @@ namespace ChatModule.Services
             }
 
             var existingParticipants = await _participantRepo.GetAllForConversationAsync(conversationId);
-            var existingUserIds = existingParticipants.Select(p => p.UserId).ToHashSet();
+            var existingUserIds = existingParticipants.Select(participant => participant.UserId).ToHashSet();
 
             var users = await _userRepo.SearchByUsernameAsync(query);
             return users.Where(user => !existingUserIds.Contains(user.Id)).ToList();

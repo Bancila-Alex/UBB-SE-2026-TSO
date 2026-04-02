@@ -1,8 +1,10 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using ChatModule.Models;
 using ChatModule.Services;
+using ChatModule.src.domain.Enums;
 using ChatModule.ViewModels;
 using ChatModule.src.domain.Enums;
 
@@ -47,6 +49,20 @@ namespace ChatModule.src.view_models
         public ObservableCollection<MemberDisplayItem> BannedMembers { get; } = new();
         public ObservableCollection<User> AddMemberResults { get; } = new();
 
+        private Participant? _selectedMember;
+        public Participant? SelectedMember
+        {
+            get => _selectedMember;
+            set => Set(ref _selectedMember, value);
+        }
+
+        private User? _selectedAddMember;
+        public User? SelectedAddMember
+        {
+            get => _selectedAddMember;
+            set => Set(ref _selectedAddMember, value);
+        }
+
         private string _addMemberQuery = string.Empty;
         public string AddMemberQuery
         {
@@ -54,7 +70,9 @@ namespace ChatModule.src.view_models
             set
             {
                 if (Set(ref _addMemberQuery, value))
+                {
                     _ = SearchUsersToAddAsync();
+                }
             }
         }
 
@@ -77,6 +95,8 @@ namespace ChatModule.src.view_models
         public RelayCommand<Guid> ViewProfileCommand { get; }
 
         public event Action<Guid>? NavigateToProfileRequested;
+
+        public Func<Task<TimeSpan?>>? RequestTimeoutDurationAsync { get; set; }
 
         public MemberPanelViewModel(
             MemberPanelService memberPanelService,
@@ -137,6 +157,12 @@ namespace ChatModule.src.view_models
 
                     if (participant.UserId == _currentUserId && participant.Role == ParticipantRole.Admin)
                         IsAdmin = true;
+                }
+
+                BannedMembers.Clear();
+                foreach (var banned in bannedMembers)
+                {
+                    BannedMembers.Add(banned);
                 }
             }
             finally
@@ -214,6 +240,88 @@ namespace ChatModule.src.view_models
         {
             NavigateToProfileRequested?.Invoke(userId);
             return Task.CompletedTask;
+        }
+
+        private async Task BanMemberAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+            {
+                return;
+            }
+
+            await _moderationService.BanMemberAsync(_conversationId, _currentUserId, userId);
+            await LoadAsync();
+        }
+
+        private async Task UnbanMemberAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+            {
+                return;
+            }
+
+            await _moderationService.UnbanMemberAsync(_conversationId, _currentUserId, userId);
+            await LoadAsync();
+        }
+
+        private async Task TimeoutMemberAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+            {
+                return;
+            }
+
+            var duration = await ChooseTimeoutDurationAsync();
+            if (!duration.HasValue)
+            {
+                return;
+            }
+
+            await _moderationService.TimeoutMemberAsync(_conversationId, _currentUserId, userId, duration.Value);
+            await LoadAsync();
+        }
+
+        private async Task RemoveTimeoutAsync()
+        {
+            if (SelectedMember == null)
+            {
+                return;
+            }
+
+            await _moderationService.RemoveTimeoutAsync(_conversationId, _currentUserId, SelectedMember.UserId);
+            await LoadAsync();
+        }
+
+        private async Task PromoteAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+            {
+                return;
+            }
+
+            await _moderationService.PromoteMemberAsync(_conversationId, _currentUserId, userId);
+            await LoadAsync();
+        }
+
+        private async Task DemoteAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+            {
+                return;
+            }
+
+            await _moderationService.DemoteMemberAsync(_conversationId, _currentUserId, userId);
+            await LoadAsync();
+        }
+
+        private async Task<TimeSpan?> ChooseTimeoutDurationAsync()
+        {
+            if (RequestTimeoutDurationAsync != null)
+            {
+                return await RequestTimeoutDurationAsync();
+            }
+
+            return TimeSpan.FromMinutes(10);
         }
     }
 }
