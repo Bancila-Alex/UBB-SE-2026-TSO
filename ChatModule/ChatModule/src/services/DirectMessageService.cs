@@ -13,6 +13,7 @@ namespace ChatModule.Services
         private readonly ConversationRepository _conversationRepository;
         private readonly ParticipantRepository _participantRepository;
         private readonly BlockService _blockService;
+        private readonly UserRepository _userRepository;
 
         public DirectMessageService(
             ConversationRepository conversationRepository,
@@ -22,6 +23,7 @@ namespace ChatModule.Services
         {
             _conversationRepository = conversationRepository;
             _participantRepository = participantRepository;
+            _userRepository = userRepository;
             _blockService = new BlockService(friendRepository, userRepository);
         }
 
@@ -91,6 +93,17 @@ namespace ChatModule.Services
             var blockedByOther = await _blockService.IsBlockedAsync(otherParticipant.UserId, viewerUserId);
 
             return blockedByViewer || blockedByOther;
+        }
+
+        public async Task<User?> GetOtherUserAsync(Guid conversationId, Guid viewerUserId)
+        {
+            var otherParticipant = await GetOtherParticipantAsync(conversationId, viewerUserId);
+            if (otherParticipant == null)
+            {
+                return null;
+            }
+
+            return await _userRepository.GetByIdAsync(otherParticipant.UserId);
         }
     }
 }

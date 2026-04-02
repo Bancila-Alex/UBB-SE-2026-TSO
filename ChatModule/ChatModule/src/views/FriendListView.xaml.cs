@@ -1,5 +1,6 @@
 using ChatModule.src.view_models;
 using Microsoft.UI.Xaml.Controls;
+using System;
 
 namespace ChatModule.src.views
 {
@@ -25,10 +26,33 @@ namespace ChatModule.src.views
             if (ViewModel == null && DataContext is FriendListViewModel vm)
             {
                 ViewModel = vm;
-                Bindings.Update();
             }
 
             ViewModel?.LoadCommand.Execute(null);
+        }
+
+        private void OnOpenDmClick(object sender, global::Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            if (sender is Button { Tag: Guid id } && ViewModel?.OpenDmCommand != null)
+            {
+                ViewModel.OpenDmCommand.Execute(id);
+            }
+        }
+
+        private void OnViewProfileClick(object sender, global::Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            if (sender is Button { Tag: Guid id } && ViewModel?.ViewProfileCommand != null)
+            {
+                ViewModel.ViewProfileCommand.Execute(id);
+            }
+        }
+
+        private void OnRemoveFriendClick(object sender, global::Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            if (sender is Button { Tag: Guid id } && ViewModel?.RemoveFriendCommand != null)
+            {
+                ViewModel.RemoveFriendCommand.Execute(id);
+            }
         }
     }
 }

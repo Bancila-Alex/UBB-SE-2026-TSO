@@ -26,7 +26,38 @@ namespace ChatModule.Services
                 throw new InvalidOperationException("User is not a participant of this conversation.");
             }
 
+            var targetMessage = await _messageRepository.GetByIdAsync(messageId);
+            if (targetMessage == null || targetMessage.ConversationId != conversationId)
+            {
+                return;
+            }
+
+            if (targetMessage.UserId.HasValue && targetMessage.UserId.Value == userId)
+            {
+                return;
+            }
+
+            if (participant.LastReadMessageId.HasValue)
+            {
+                var currentLastRead = await _messageRepository.GetByIdAsync(participant.LastReadMessageId.Value);
+                if (currentLastRead != null && currentLastRead.CreatedAt >= targetMessage.CreatedAt)
+                {
+                    return;
+                }
+            }
+
             await _participantRepository.UpdateLastReadAsync(conversationId, userId, messageId);
+        }
+
+        public async Task MarkLatestAsReadAsync(Guid conversationId, Guid userId)
+        {
+            var latestReadableMessageId = await _messageRepository.GetLatestReadableMessageIdAsync(conversationId, userId);
+            if (!latestReadableMessageId.HasValue)
+            {
+                return;
+            }
+
+            await MarkAsReadAsync(conversationId, userId, latestReadableMessageId.Value);
         }
 
         public async Task<List<Participant>> GetReadReceiptsAsync(Guid conversationId, Guid messageId)
@@ -67,6 +98,11 @@ namespace ChatModule.Services
         {
             var participant = await _participantRepository.GetAsync(conversationId, userId);
             return participant?.LastReadMessageId;
+        }
+
+        public async Task<List<Participant>> GetParticipantsAsync(Guid conversationId)
+        {
+            return await _participantRepository.GetAllForConversationAsync(conversationId);
         }
     }
 }

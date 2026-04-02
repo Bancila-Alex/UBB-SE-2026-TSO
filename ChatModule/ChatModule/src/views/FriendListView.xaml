@@ -3,7 +3,6 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:converters="using:ChatModule.src.views.Converters"
-    xmlns:viewModels="using:ChatModule.src.view_models"
     x:Name="RootControl">
     <UserControl.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
@@ -45,7 +44,7 @@
                     Spacing="10">
                     <Button
                         Content="Requests"
-                        Command="{x:Bind ViewModel.OpenRequestsCommand}"
+                        Command="{Binding OpenRequestsCommand}"
                         Background="#2E236C"
                         Foreground="#C8ACD6"
                         BorderBrush="#433D8B"
@@ -56,7 +55,7 @@
 
                     <Button
                         Content="Refresh"
-                        Command="{x:Bind ViewModel.LoadCommand}"
+                        Command="{Binding LoadCommand}"
                         Background="#433D8B"
                         Foreground="#C8ACD6"
                         BorderThickness="0"
@@ -73,7 +72,7 @@
 
                     <TextBox
                         Grid.Column="0"
-                        Text="{x:Bind ViewModel.FriendUsernameInput, Mode=TwoWay}"
+                        Text="{Binding FriendUsernameInput, Mode=TwoWay}"
                         PlaceholderText="Add friend by username"
                         Background="#433D8B"
                         Foreground="#C8ACD6"
@@ -85,7 +84,7 @@
                     <Button
                         Grid.Column="1"
                         Content="Add"
-                        Command="{x:Bind ViewModel.SendFriendRequestCommand}"
+                        Command="{Binding SendFriendRequestCommand}"
                         Background="#433D8B"
                         Foreground="#C8ACD6"
                         BorderThickness="0"
@@ -97,7 +96,7 @@
                 <TextBlock
                     Grid.Row="2"
                     Grid.ColumnSpan="2"
-                    Text="{x:Bind ViewModel.FriendActionMessage, Mode=OneWay}"
+                    Text="{Binding FriendActionMessage}"
                     Foreground="#C8ACD6"
                     Opacity="0.85"
                     FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
@@ -107,8 +106,8 @@
 
         <Grid Grid.Row="1" Padding="10">
             <ProgressRing
-                IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
-                Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibility}}"
+                IsActive="{Binding IsLoading}"
+                Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}"
                 Width="40"
                 Height="40"
                 Foreground="#433D8B"
@@ -116,12 +115,13 @@
                 VerticalAlignment="Center" />
 
             <ListView
-                ItemsSource="{x:Bind ViewModel.FriendItems, Mode=OneWay}"
+                x:Name="FriendList"
+                ItemsSource="{Binding FriendItems}"
                 Background="Transparent"
                 SelectionMode="None"
-                Visibility="{x:Bind ViewModel.ShowFriendList, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                Visibility="{Binding ShowFriendList, Converter={StaticResource BoolToVisibility}}">
                 <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="viewModels:FriendListItemViewModel">
+                    <DataTemplate>
                         <Border
                             Background="#2E236C"
                             CornerRadius="6"
@@ -137,7 +137,7 @@
                                 <Grid Width="40" Height="40">
                                     <Ellipse Fill="#433D8B" />
                                     <TextBlock
-                                        Text="{x:Bind AvatarInitial}"
+                                        Text="{Binding AvatarInitial}"
                                         Foreground="#C8ACD6"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
@@ -147,20 +147,15 @@
                                 </Grid>
 
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <TextBlock
-                                            Text="{x:Bind Username}"
-                                            Foreground="#C8ACD6"
-                                            FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
-                                            FontSize="14"
-                                            FontWeight="SemiBold" />
-                                        <TextBlock
-                                            Text="🎂"
-                                            Visibility="{x:Bind IsBirthdayToday, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
-                                    </StackPanel>
+                                    <TextBlock
+                                        Text="{Binding Username}"
+                                        Foreground="#C8ACD6"
+                                        FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
+                                        FontSize="14"
+                                        FontWeight="SemiBold" />
 
                                     <TextBlock
-                                        Text="{x:Bind StatusLabel}"
+                                        Text="{Binding StatusLabel}"
                                         Foreground="#C8ACD6"
                                         Opacity="0.7"
                                         FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
@@ -170,8 +165,8 @@
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
                                     <Button
                                         Content="Profile"
-                                        Command="{Binding ElementName=RootControl, Path=ViewModel.ViewProfileCommand}"
-                                        CommandParameter="{x:Bind Id}"
+                                        Click="OnViewProfileClick"
+                                        Tag="{Binding Id}"
                                         Background="#2E236C"
                                         Foreground="#C8ACD6"
                                         BorderBrush="#433D8B"
@@ -181,8 +176,8 @@
 
                                     <Button
                                         Content="DM"
-                                        Command="{Binding ElementName=RootControl, Path=ViewModel.OpenDmCommand}"
-                                        CommandParameter="{x:Bind Id}"
+                                        Click="OnOpenDmClick"
+                                        Tag="{Binding Id}"
                                         Background="#433D8B"
                                         Foreground="#C8ACD6"
                                         BorderThickness="0"
@@ -191,8 +186,8 @@
 
                                     <Button
                                         Content="Remove"
-                                        Command="{Binding ElementName=RootControl, Path=ViewModel.RemoveFriendCommand}"
-                                        CommandParameter="{x:Bind Id}"
+                                        Click="OnRemoveFriendClick"
+                                        Tag="{Binding Id}"
                                         Background="Transparent"
                                         Foreground="#C8ACD6"
                                         BorderBrush="#433D8B"
@@ -210,7 +205,7 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Spacing="8"
-                Visibility="{x:Bind ViewModel.ShowEmptyState, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                Visibility="{Binding ShowEmptyState, Converter={StaticResource BoolToVisibility}}">
                 <TextBlock
                     Text="No friends found"
                     Foreground="#C8ACD6"

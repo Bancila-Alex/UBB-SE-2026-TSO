@@ -11,6 +11,7 @@ namespace ChatModule.Services
     {
         private readonly MessageRepository _messageRepository;
         private readonly ParticipantRepository _participantRepository;
+        private readonly UserRepository _userRepository;
 
         public MessageService(
             MessageRepository messageRepository,
@@ -19,7 +20,7 @@ namespace ChatModule.Services
         {
             _messageRepository = messageRepository;
             _participantRepository = participantRepository;
-            _ = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         }
 
         private async Task<Participant> RequireActiveParticipantAsync(Guid conversationId, Guid userId)
@@ -50,7 +51,10 @@ namespace ChatModule.Services
         public async Task<List<Message>> GetMessagesAsync(Guid conversationId, Guid userId, int skip, int take)
         {
             await RequireActiveParticipantAsync(conversationId, userId);
-            return await _messageRepository.GetByConversationAsync(conversationId, skip, take);
+
+            var messages = await _messageRepository.GetByConversationAsync(conversationId, skip, take);
+            await PopulateSenderMetadataAsync(messages);
+            return messages;
         }
 
         public async Task<Message> SendMessageAsync(Guid conversationId, Guid senderId, string content, Guid? replyToId)
@@ -77,6 +81,11 @@ namespace ChatModule.Services
             };
 
             await _messageRepository.CreateAsync(message);
+
+            var sender = await _userRepository.GetByIdAsync(senderId);
+            message.SenderUsername = sender?.Username;
+            message.SenderAvatarUrl = sender?.AvatarUrl;
+
             return message;
         }
 
@@ -112,6 +121,23 @@ namespace ChatModule.Services
                 throw new UnauthorizedAccessException("You do not have permission to delete this message.");
 
             await _messageRepository.SoftDeleteAsync(messageId);
+        }
+
+        private async Task PopulateSenderMetadataAsync(List<Message> messages)
+        {
+            foreach (var message in messages)
+            {
+                if (!message.UserId.HasValue)
+                {
+                    message.SenderUsername = "System";
+                    message.SenderAvatarUrl = null;
+                    continue;
+                }
+
+                var sender = await _userRepository.GetByIdAsync(message.UserId.Value);
+                message.SenderUsername = sender?.Username ?? "Unknown";
+                message.SenderAvatarUrl = sender?.AvatarUrl;
+            }
         }
     }
 }

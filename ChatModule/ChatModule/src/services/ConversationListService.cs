@@ -60,6 +60,10 @@ namespace ChatModule.Services
                 }
             }
 
+            conversations = conversations
+                .OrderByDescending(conversation => conversation.LastMessageAt ?? DateTime.MinValue)
+                .ToList();
+
             return conversations;
         }
 
@@ -194,11 +198,10 @@ namespace ChatModule.Services
         {
             if (participant.LastReadMessageId.HasValue)
             {
-                return await _messageRepository.CountUnreadAsync(conversationId, participant.LastReadMessageId.Value);
+                return await _messageRepository.CountUnreadAsync(conversationId, participant.LastReadMessageId.Value, participant.UserId);
             }
 
-            var lastMessage = await _messageRepository.GetLastMessageAsync(conversationId);
-            return lastMessage == null ? 0 : 1;
+            return await _messageRepository.CountUnreadFromStartAsync(conversationId, participant.UserId);
         }
 
         private static string BuildLastMessagePreview(Message? message)

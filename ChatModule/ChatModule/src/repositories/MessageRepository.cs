@@ -74,7 +74,7 @@ ORDER BY CreatedAt;";
 SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId
 FROM Messages
 WHERE ConversationId = @ConversationId
-ORDER BY CreatedAt
+ORDER BY CreatedAt ASC
 OFFSET @Skip ROWS
 FETCH NEXT @Take ROWS ONLY;";
 
@@ -232,10 +232,10 @@ ORDER BY CreatedAt DESC;";
             return MapMessage(reader);
         }
 
-        public async Task<int> CountUnreadAsync(Guid ConversationId, Guid LastReadMessageId)
+        public async Task<int> CountUnreadAsync(Guid conversationId, Guid lastReadMessageId, Guid userId)
         {
-            await using var Connection = new SqlConnection(_db.ConnectionString);
-            await Connection.OpenAsync();
+            await using var connection = new SqlConnection(_db.ConnectionString);
+            await connection.OpenAsync();
 
             const string sql = @"
 SELECT COUNT(*)
@@ -245,12 +245,66 @@ WHERE MessageToCount.ConversationId = @ConversationId
   AND LastReadMessage.ConversationId = @ConversationId
   AND MessageToCount.CreatedAt > LastReadMessage.CreatedAt;";
 
-            await using var Command = new SqlCommand(sql, Connection);
-            Command.Parameters.AddWithValue("@ConversationId", ConversationId);
-            Command.Parameters.AddWithValue("@LastReadMessageId", LastReadMessageId);
+            await using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@ConversationId", conversationId);
+            command.Parameters.AddWithValue("@LastReadMessageId", lastReadMessageId);
+            command.Parameters.AddWithValue("@UserId", userId);
 
-            var ScalarResult = await Command.ExecuteScalarAsync();
-            return Convert.ToInt32(ScalarResult);
+            command.CommandText = @"
+SELECT COUNT(*)
+FROM Messages MessageToCount
+INNER JOIN Messages LastReadMessage ON LastReadMessage.Id = @LastReadMessageId
+WHERE MessageToCount.ConversationId = @ConversationId
+  AND LastReadMessage.ConversationId = @ConversationId
+  AND MessageToCount.CreatedAt > LastReadMessage.CreatedAt
+  AND (MessageToCount.UserId IS NULL OR MessageToCount.UserId <> @UserId);";
+
+            var scalarResult = await command.ExecuteScalarAsync();
+            return Convert.ToInt32(scalarResult);
+        }
+
+        public async Task<Guid?> GetLatestReadableMessageIdAsync(Guid conversationId, Guid userId)
+        {
+            await using var connection = new SqlConnection(_db.ConnectionString);
+            await connection.OpenAsync();
+
+            const string sql = @"
+SELECT TOP 1 Id
+FROM Messages
+WHERE ConversationId = @ConversationId
+  AND (UserId IS NULL OR UserId <> @UserId)
+ORDER BY CreatedAt DESC;";
+
+            await using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@ConversationId", conversationId);
+            command.Parameters.AddWithValue("@UserId", userId);
+
+            var scalarResult = await command.ExecuteScalarAsync();
+            if (scalarResult == null || scalarResult == DBNull.Value)
+            {
+                return null;
+            }
+
+            return (Guid)scalarResult;
+        }
+
+        public async Task<int> CountUnreadFromStartAsync(Guid conversationId, Guid userId)
+        {
+            await using var connection = new SqlConnection(_db.ConnectionString);
+            await connection.OpenAsync();
+
+            const string sql = @"
+SELECT COUNT(*)
+FROM Messages
+WHERE ConversationId = @ConversationId
+  AND (UserId IS NULL OR UserId <> @UserId);";
+
+            await using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@ConversationId", conversationId);
+            command.Parameters.AddWithValue("@UserId", userId);
+
+            var scalarResult = await command.ExecuteScalarAsync();
+            return Convert.ToInt32(scalarResult);
         }
 
         public async Task<int> CountReadByAsync(Guid ConversationId, Guid MessageId)

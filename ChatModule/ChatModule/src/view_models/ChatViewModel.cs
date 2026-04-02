@@ -55,6 +55,13 @@ namespace ChatModule.src.view_models
             private set => Set(ref _pinnedMessage, value);
         }
 
+        private bool _isConversationGroup;
+        public bool IsConversationGroup
+        {
+            get => _isConversationGroup;
+            private set => Set(ref _isConversationGroup, value);
+        }
+
         public bool IsInputDisabled
         {
             get => _isInputDisabled;
@@ -231,7 +238,24 @@ namespace ChatModule.src.view_models
                 await PopulateReactionCountersAsync();
 
                 var conversation = await _conversationRepository.GetByIdAsync(conversationId);
-                ConversationTitle = conversation?.Title ?? string.Empty;
+                IsConversationGroup = conversation?.Type == ConversationType.Group;
+
+                if (conversation?.Type == ConversationType.Dm)
+                {
+                    var otherUser = await _directMessageService.GetOtherUserAsync(conversationId, _currentUserId);
+                    if (otherUser != null)
+                    {
+                        ConversationTitle = otherUser.Username;
+                    }
+                    else
+                    {
+                        ConversationTitle = "Direct Message";
+                    }
+                }
+                else
+                {
+                    ConversationTitle = conversation?.Title ?? "Conversation";
+                }
 
                 if (conversation?.PinnedMessageId != null)
                 {
@@ -274,6 +298,12 @@ namespace ChatModule.src.view_models
                     return;
                 }
 
+                if (string.IsNullOrWhiteSpace(MessageInput))
+                {
+                    ErrorMessage = "Empty messages cannot be sent.";
+                    return;
+                }
+
                 if (EditingMessage != null)
                 {
                     await ConfirmEditAsync();
@@ -285,11 +315,16 @@ namespace ChatModule.src.view_models
 
                 var message = await _messageService.SendMessageAsync(ConversationId, _currentUserId, content, replyToId);
                 message.IsMine = true;
-                Messages.Insert(0, message);
+                Messages.Add(message);
                 await PopulateReadReceiptMetadataAsync();
+                await UpdateUnreadSeparatorAsync();
 
                 MessageInput = string.Empty;
                 ReplyingTo = null;
+
+                await _readReceiptService.MarkLatestAsReadAsync(ConversationId, _currentUserId);
+                await PopulateReadReceiptMetadataAsync();
+                await UpdateUnreadSeparatorAsync();
             }
             catch (Exception ex)
             {
@@ -609,6 +644,14 @@ namespace ChatModule.src.view_models
 
         private async Task PopulateReadReceiptMetadataAsync()
         {
+            if (ConversationId == Guid.Empty)
+            {
+                return;
+            }
+
+            var participants = await _readReceiptService.GetParticipantsAsync(ConversationId);
+            var participantCount = participants.Count;
+
             foreach (var message in Messages)
             {
                 message.IsMine = message.UserId == _currentUserId;
@@ -629,19 +672,30 @@ namespace ChatModule.src.view_models
                     continue;
                 }
 
-                if (readByCount <= 0)
+                var otherReaders = Math.Max(0, readByCount - 1);
+
+                if (otherReaders <= 0)
                 {
                     message.ReadReceiptLabel = null;
                 }
-                else if (readByCount == 1)
+                else if (!IsConversationGroup)
                 {
                     message.ReadReceiptLabel = "Seen";
                 }
                 else
                 {
-                    message.ReadReceiptLabel = $"Read by {readByCount}";
+                    if (otherReaders <= 0)
+                    {
+                        message.ReadReceiptLabel = null;
+                    }
+                    else
+                    {
+                        message.ReadReceiptLabel = $"Read by {otherReaders}/{Math.Max(1, participantCount - 1)}";
+                    }
                 }
             }
+
+            OnPropertyChanged(nameof(Messages));
         }
 
         private async Task UpdateUnreadSeparatorAsync()

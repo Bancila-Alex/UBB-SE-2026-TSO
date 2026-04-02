@@ -60,8 +60,20 @@ namespace ChatModule.ViewModels
         public bool IsLoading
         {
             get => _isLoading;
-            set => Set(ref _isLoading, value);
+            set
+            {
+                if (Set(ref _isLoading, value))
+                {
+                    OnPropertyChanged(nameof(ShowEmptyState));
+                    OnPropertyChanged(nameof(HasConversations));
+                    OnPropertyChanged(nameof(ShowConversationList));
+                }
+            }
         }
+
+        public bool ShowEmptyState => !IsLoading && Conversations.Count == 0;
+        public bool HasConversations => Conversations.Count > 0;
+        public bool ShowConversationList => !IsLoading && HasConversations;
 
         public RelayCommand           LoadCommand             { get; }
         public RelayCommand<string>   SwitchTabCommand        { get; }
@@ -84,6 +96,13 @@ namespace ChatModule.ViewModels
             NewDmCommand            = new RelayCommand(RequestNewDmAsync);
             ToggleFavouriteCommand  = new RelayCommand<Guid>(ToggleFavouriteAsync);
             OpenConversationCommand = new RelayCommand<Guid>(OpenConversationAsync);
+
+            Conversations.CollectionChanged += (_, _) =>
+            {
+                OnPropertyChanged(nameof(ShowEmptyState));
+                OnPropertyChanged(nameof(HasConversations));
+                OnPropertyChanged(nameof(ShowConversationList));
+            };
         }
 
         private async Task LoadTabAsync()
@@ -104,6 +123,9 @@ namespace ChatModule.ViewModels
                 Conversations.Clear();
                 foreach (var c in results)
                     Conversations.Add(c);
+                OnPropertyChanged(nameof(ShowEmptyState));
+                OnPropertyChanged(nameof(HasConversations));
+                OnPropertyChanged(nameof(ShowConversationList));
             }
             finally
             {
@@ -126,6 +148,9 @@ namespace ChatModule.ViewModels
                 Conversations.Clear();
                 foreach (var c in results)
                     Conversations.Add(c);
+                OnPropertyChanged(nameof(ShowEmptyState));
+                OnPropertyChanged(nameof(HasConversations));
+                OnPropertyChanged(nameof(ShowConversationList));
             }
             finally
             {

@@ -11,6 +11,7 @@
         <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
         <converters:InverseBooleanConverter x:Key="InverseBoolean" />
         <converters:CountToVisibilityConverter x:Key="CountToVisibility" />
+        <converters:StringToImageSourceConverter x:Key="StringToImageSource" />
         <converters:ReactionCountsToDisplayListConverter x:Key="ReactionCountsToDisplayList" />
 
         <DataTemplate x:Key="MessageItemTemplate">
@@ -49,10 +50,24 @@
                     Background="#433D8B"
                     CornerRadius="18"
                     VerticalAlignment="Top">
-                    <TextBlock
-                        Text="{Binding UserId}"
-                        FontSize="0.1"
-                        Opacity="0" />
+                    <Grid>
+                        <Image
+                            Source="{Binding SenderAvatarUrl, Converter={StaticResource StringToImageSource}}"
+                            Stretch="UniformToFill"
+                            Width="36"
+                            Height="36"
+                            Visibility="{Binding SenderAvatarUrl, Converter={StaticResource NullToVisibility}}" />
+
+                        <TextBlock
+                            Text="{Binding SenderInitial}"
+                            Foreground="#C8ACD6"
+                            FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
+                            FontSize="14"
+                            FontWeight="SemiBold"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Visibility="{Binding SenderAvatarUrl, Converter={StaticResource NullToVisibility}, ConverterParameter=Invert}" />
+                    </Grid>
                 </Border>
 
                 <Border
@@ -69,7 +84,7 @@
                             </Grid.ColumnDefinitions>
 
                             <TextBlock
-                                Text="{Binding UserId}"
+                                Text="{Binding SenderUsername}"
                                 Foreground="#C8ACD6"
                                 FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
                                 FontSize="13"
@@ -206,7 +221,7 @@
                 ItemsSource="{x:Bind ViewModel.Messages, Mode=OneWay}"
                 ItemTemplate="{StaticResource MessageItemTemplate}"
                 Background="Transparent"
-                Padding="12,44,12,10"
+                Padding="20,52,20,16"
                 SelectionMode="None" />
 
             <Button
@@ -274,7 +289,7 @@
         </Border>
 
         <!-- Bottom Input Section -->
-        <Grid Grid.Row="3" Background="#2E236C" Padding="8">
+        <Grid Grid.Row="3" Background="#2E236C" Padding="14,10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />

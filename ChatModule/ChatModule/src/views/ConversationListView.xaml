@@ -14,11 +14,11 @@
         <converters:StringToImageSourceConverter x:Key="StringToImageSource" />
     </UserControl.Resources>
 
-        <Grid Background="#17153B">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
+    <Grid Background="#17153B">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -190,7 +190,7 @@
                 Background="Transparent"
                 Padding="10,10"
                 SelectionMode="Single"
-                Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                Visibility="{x:Bind ViewModel.ShowConversationList, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="Padding" Value="0" />
@@ -250,6 +250,7 @@
                                         FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
                                         FontSize="11"
                                         Opacity="0.7"
+                                        HorizontalAlignment="Right"
                                         Visibility="{x:Bind LastMessageAt, Converter={StaticResource NullToVisibility}}" />
 
                                     <Border
@@ -306,14 +307,8 @@
             <StackPanel
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
-                Spacing="8">
-                <StackPanel.Visibility>
-                    <Binding
-                        ElementName="RootControl"
-                        Path="ViewModel.Conversations.Count"
-                        Converter="{StaticResource BoolToVisibility}"
-                        ConverterParameter="Invert" />
-                </StackPanel.Visibility>
+                Spacing="8"
+                Visibility="{x:Bind ViewModel.ShowEmptyState, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
                 <TextBlock
                     Text="No conversations yet"
                     Foreground="#C8ACD6"
