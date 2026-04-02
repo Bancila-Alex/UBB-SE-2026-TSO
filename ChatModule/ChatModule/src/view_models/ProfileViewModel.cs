@@ -14,12 +14,19 @@ public class ProfileViewModel : BaseViewModel
     private readonly DirectMessageService _directMessageService;
     private readonly Guid _currentUserId;
     private readonly ProfileService _profileService;
+    private bool _suppressStatusUpdate;
 
     private User? _user;
     public User? User
     {
         get => _user;
-        set => Set(ref _user, value);
+        set
+        {
+            if (Set(ref _user, value))
+            {
+                OnPropertyChanged(nameof(StatusBadgeText));
+            }
+        }
     }
 
     private bool _isBlocked;
@@ -38,6 +45,13 @@ public class ProfileViewModel : BaseViewModel
 
     public ObservableCollection<User> MutualFriends { get; } = new();
 
+    private bool _areMutualFriendsVisible;
+    public bool AreMutualFriendsVisible
+    {
+        get => _areMutualFriendsVisible;
+        set => Set(ref _areMutualFriendsVisible, value);
+    }
+
     public event Action<Guid>? NavigateToChatRequested;
 
     public RelayCommand SendFriendRequestCommand { get; }
@@ -51,19 +65,34 @@ public class ProfileViewModel : BaseViewModel
         get => _selectedStatus;
         set
         {
-            if (Set(ref _selectedStatus, value) && User != null)
+            if (Set(ref _selectedStatus, value))
             {
-                _ = UpdateStatusAsync(value);
+                OnPropertyChanged(nameof(StatusBadgeText));
+
+                if (!_suppressStatusUpdate && User != null && IsOwnProfile)
+                {
+                    _ = UpdateStatusAsync(value);
+                }
             }
         }
     }
+
+    public string StatusBadgeText => SelectedStatus.ToString();
 
     private string? _editBio;
     public string? EditBio
     {
         get => _editBio;
-        set => Set(ref _editBio, value);
+        set
+        {
+            if (Set(ref _editBio, value))
+            {
+                OnPropertyChanged(nameof(DisplayBio));
+            }
+        }
     }
+
+    public string DisplayBio => string.IsNullOrWhiteSpace(EditBio) ? "No bio yet" : EditBio!;
 
     private string? _editAvatarUrl;
     public string? EditAvatarUrl
@@ -82,9 +111,18 @@ public class ProfileViewModel : BaseViewModel
             {
                 OnPropertyChanged(nameof(EditBirthdayOffset));
                 OnPropertyChanged(nameof(IsBirthdayToday));
+                OnPropertyChanged(nameof(BirthdayText));
             }
         }
     }
+
+    public string BirthdayText => EditBirthday.HasValue
+        ? EditBirthday.Value.ToString("MMMM d, yyyy")
+        : "Birthday not set";
+
+    public int MutualFriendsCount => MutualFriends.Count;
+
+    public string MutualFriendsLabel => $"Mutual Friends ({MutualFriendsCount})";
 
     public RelayCommand SaveProfileCommand { get; }
     public RelayCommand LoadMutualFriendsCommand { get; }
@@ -132,7 +170,13 @@ public class ProfileViewModel : BaseViewModel
         _blockService = blockService ?? throw new ArgumentNullException(nameof(blockService));
         _directMessageService = directMessageService ?? throw new ArgumentNullException(nameof(directMessageService));
         _currentUserId = currentUserId;
-        _profileService = profileService ?? throw new ArgumentNullException(nameof(ProfileService));
+        _profileService = profileService ?? throw new ArgumentNullException(nameof(profileService));
+
+        MutualFriends.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(MutualFriendsCount));
+            OnPropertyChanged(nameof(MutualFriendsLabel));
+        };
         
         SendFriendRequestCommand = new RelayCommand(SendFriendRequestAsync);
         BlockUserCommand = new RelayCommand(BlockUserAsync);
@@ -148,15 +192,35 @@ public class ProfileViewModel : BaseViewModel
         User = await _profileService.GetProfileAsync(targetUserId);
         IsOwnProfile = targetUserId == _currentUserId;
 
-        if (User != null)
+        _suppressStatusUpdate = true;
+
+        try
         {
-            SelectedStatus = User.Status;
-            EditBio = User.Bio;
-            EditAvatarUrl = User.AvatarUrl;
-            EditBirthday = User.Birthday;
+            if (User != null)
+            {
+                SelectedStatus = User.Status;
+                EditBio = User.Bio;
+                EditAvatarUrl = User.AvatarUrl;
+                EditBirthday = User.Birthday;
+            }
+        }
+        finally
+        {
+            _suppressStatusUpdate = false;
         }
 
-        await LoadMutualFriendsAsync();
+        AreMutualFriendsVisible = false;
+
+        if (!IsOwnProfile && User != null)
+        {
+            IsBlocked = await _blockService.IsBlockedAsync(_currentUserId, User.Id);
+            await RefreshMutualFriendsAsync();
+        }
+        else
+        {
+            IsBlocked = false;
+            MutualFriends.Clear();
+        }
     }
 
     private async Task UpdateStatusAsync(UserStatus status)
@@ -168,24 +232,71 @@ public class ProfileViewModel : BaseViewModel
     private async Task SaveProfileAsync()
     {
         if (User == null) return;
+
         await _profileService.UpdateProfileAsync(User.Id, EditBio, EditAvatarUrl, EditBirthday);
         User = await _profileService.GetProfileAsync(User.Id);
+
+        if (User != null)
+        {
+            _suppressStatusUpdate = true;
+            try
+            {
+                SelectedStatus = User.Status;
+                EditBio = User.Bio;
+                EditAvatarUrl = User.AvatarUrl;
+                EditBirthday = User.Birthday;
+            }
+            finally
+            {
+                _suppressStatusUpdate = false;
+            }
+        }
     }
 
     private async Task LoadMutualFriendsAsync()
     {
-        MutualFriends.Clear();
-        if (!IsOwnProfile && User != null)
+        if (IsOwnProfile || User == null)
         {
-            var mutuals = await _profileService.GetMutualFriendsAsync(_currentUserId, User.Id);
-            foreach (var user in mutuals)
-                MutualFriends.Add(user);
+            return;
+        }
+
+        if (!AreMutualFriendsVisible || MutualFriends.Count == 0)
+        {
+            await RefreshMutualFriendsAsync();
+        }
+
+        AreMutualFriendsVisible = !AreMutualFriendsVisible;
+    }
+
+    private async Task RefreshMutualFriendsAsync()
+    {
+        MutualFriends.Clear();
+        if (IsOwnProfile || User == null)
+        {
+            return;
+        }
+
+        var mutuals = await _profileService.GetMutualFriendsAsync(_currentUserId, User.Id);
+        foreach (var user in mutuals)
+        {
+            MutualFriends.Add(user);
         }
     }
 
     private async Task SendFriendRequestAsync()
     {
         if (User == null)
+        {
+            return;
+        }
+
+        if (IsBlocked)
+        {
+            return;
+        }
+
+        var existingRelationshipStatus = await _friendRequestService.GetRelationshipStatusAsync(_currentUserId, User.Id);
+        if (existingRelationshipStatus.HasValue)
         {
             return;
         }
