@@ -65,6 +65,7 @@ public class RegisterViewModel : BaseViewModel
     public RelayCommand BackToLoginCommand { get; }
 
     public event Action? NavigateToLoginRequested;
+    public event Func<Guid, string, Task>? RegisterSucceeded;
 
     public RegisterViewModel(AuthService authService)
     {
@@ -79,7 +80,7 @@ public class RegisterViewModel : BaseViewModel
         ErrorMessage = null;
         try
         {
-            await _authService.RegisterAsync(
+            var user = await _authService.RegisterAsync(
                 Username,
                 Email,
                 Password,
@@ -87,7 +88,15 @@ public class RegisterViewModel : BaseViewModel
                 Birthday,
                 null // avatarUrl
             );
-            NavigateToLoginRequested?.Invoke();
+
+            if (RegisterSucceeded != null)
+            {
+                await RegisterSucceeded(user.Id, user.Username);
+            }
+            else
+            {
+                NavigateToLoginRequested?.Invoke();
+            }
         }
         catch (Exception ex)
         {

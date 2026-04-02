@@ -18,6 +18,8 @@ using Windows.Foundation.Collections;
 using System.Configuration;
 using System.Diagnostics;
 using ChatModule.Repositories;
+using ChatModule.Services;
+using ChatModule.src.views;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -54,7 +56,22 @@ namespace ChatModule
                 DatabaseManager = new DatabaseManager(configuredConnection);
             }
 
-            _window = new MainWindow();
+            var db = DatabaseManager
+                     ?? new DatabaseManager("Data Source=localhost;Initial Catalog=ChatModule;Integrated Security=True;Encrypt=False;TrustServerCertificate=True;");
+
+            var authService = new AuthService(new UserRepository(db));
+
+            var loginWindow = new LoginWindow(authService);
+            loginWindow.LoginSucceeded += (userId, username) =>
+            {
+                var mainWindow = new MainWindow(userId, username);
+                MainAppWindow = mainWindow;
+                mainWindow.Activate();
+                loginWindow.Close();
+                return System.Threading.Tasks.Task.CompletedTask;
+            };
+
+            _window = loginWindow;
             MainAppWindow = _window;
             _window.Activate();
         }

@@ -12,9 +12,12 @@
     <WinUISDKReferences>false</WinUISDKReferences>
     <EnableMsixTooling>true</EnableMsixTooling>
     <Nullable>enable</Nullable>
-  </PropertyGroup>
+</PropertyGroup>
   <ItemGroup>
+    <Page Remove="src\views\FriendListView.xaml" />
+    <Compile Remove="src\views\FriendListView.xaml.cs" />
     <Page Remove="src\views\LoginWindow.xaml" />
+    <Compile Remove="src\views\LoginWindow.xaml.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -52,12 +55,6 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.5" />
   </ItemGroup>
-  <ItemGroup>
-    <None Update="src\views\LoginWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </None>
-  </ItemGroup>
-
   <!--
     Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution
     Explorer "Package and Publish" context menu entry to be enabled for this project even if
