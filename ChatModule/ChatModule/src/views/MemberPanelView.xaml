@@ -8,12 +8,14 @@
 
     <UserControl.Resources>
         <converters:NullToVisibilityConverter x:Key="NullToVisibility" />
+        <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </UserControl.Resources>
 
     <Grid Background="#17153B">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
@@ -40,17 +42,122 @@
                         CornerRadius="6"
                         Padding="10,8"
                         Margin="0,2">
-                        <TextBlock
-                            Text="{x:Bind UserId}"
-                            Foreground="#C8ACD6"
-                            FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
-                            FontSize="14" />
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock
+                                Grid.Row="0"
+                                Text="{x:Bind UserId}"
+                                Foreground="#C8ACD6"
+                                FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
+                                FontSize="14" />
+
+                            <StackPanel
+                                Grid.Row="1"
+                                Orientation="Horizontal"
+                                Spacing="6"
+                                Margin="0,8,0,0"
+                                Visibility="{Binding ElementName=RootControl, Path=ViewModel.IsAdmin, Converter={StaticResource BoolToVisibility}}">
+                                <Button
+                                    Content="Promote"
+                                    Command="{Binding ElementName=RootControl, Path=ViewModel.PromoteCommand}"
+                                    CommandParameter="{x:Bind UserId}"
+                                    Background="#433D8B"
+                                    Foreground="#C8ACD6"
+                                    BorderThickness="0"
+                                    CornerRadius="4"
+                                    Padding="10,4" />
+                                <Button
+                                    Content="Demote"
+                                    Command="{Binding ElementName=RootControl, Path=ViewModel.DemoteCommand}"
+                                    CommandParameter="{x:Bind UserId}"
+                                    Background="#433D8B"
+                                    Foreground="#C8ACD6"
+                                    BorderThickness="0"
+                                    CornerRadius="4"
+                                    Padding="10,4" />
+                                <Button
+                                    Content="Timeout"
+                                    Command="{Binding ElementName=RootControl, Path=ViewModel.TimeoutMemberCommand}"
+                                    CommandParameter="{x:Bind UserId}"
+                                    Background="#433D8B"
+                                    Foreground="#C8ACD6"
+                                    BorderThickness="0"
+                                    CornerRadius="4"
+                                    Padding="10,4" />
+                                <Button
+                                    Content="Ban"
+                                    Command="{Binding ElementName=RootControl, Path=ViewModel.BanMemberCommand}"
+                                    CommandParameter="{x:Bind UserId}"
+                                    Background="#433D8B"
+                                    Foreground="#C8ACD6"
+                                    BorderThickness="0"
+                                    CornerRadius="4"
+                                    Padding="10,4" />
+                            </StackPanel>
+                        </Grid>
                     </Border>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
 
-        <Border Grid.Row="2" Background="#2E236C" Padding="12">
+        <Border
+            Grid.Row="2"
+            Background="#2E236C"
+            Padding="12"
+            Margin="8,0,8,8"
+            Visibility="{x:Bind ViewModel.IsAdmin, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel Spacing="8">
+                <TextBlock
+                    Text="Banned Members"
+                    Foreground="#C8ACD6"
+                    FontFamily="ms-appx:///Assets/Fonts/SourceSans3-Regular.ttf#Source Sans 3"
+                    FontSize="14"
+                    FontWeight="SemiBold" />
+
+                <ListView
+                    ItemsSource="{x:Bind ViewModel.BannedMembers, Mode=OneWay}"
+                    Background="Transparent"
+                    Padding="0"
+                    SelectionMode="None"
+                    MaxHeight="180">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="models:Participant">
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock
+                                    Grid.Column="0"
+                                    Text="{x:Bind UserId}"
+                                    Foreground="#C8ACD6"
+                                    FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
+                                    FontSize="13"
+                                    VerticalAlignment="Center" />
+
+                                <Button
+                                    Grid.Column="1"
+                                    Content="Unban"
+                                    Command="{Binding ElementName=RootControl, Path=ViewModel.UnbanMemberCommand}"
+                                    CommandParameter="{x:Bind UserId}"
+                                    Background="#433D8B"
+                                    Foreground="#C8ACD6"
+                                    BorderThickness="0"
+                                    CornerRadius="4"
+                                    Padding="10,4" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="3" Background="#2E236C" Padding="12">
             <StackPanel Spacing="8">
                 <TextBlock
                     Text="Add Member"
@@ -91,11 +198,12 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
 
-                <StackPanel Spacing="8">
+                <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.IsAdmin, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button
                             Content="Ban"
                             Command="{x:Bind ViewModel.BanMemberCommand}"
+                            CommandParameter="{x:Bind ViewModel.SelectedMember.UserId, Mode=OneWay}"
                             Background="#433D8B"
                             Foreground="#C8ACD6"
                             BorderThickness="0"
@@ -104,6 +212,7 @@
                         <Button
                             Content="Unban"
                             Command="{x:Bind ViewModel.UnbanMemberCommand}"
+                            CommandParameter="{x:Bind ViewModel.SelectedMember.UserId, Mode=OneWay}"
                             Background="#433D8B"
                             Foreground="#C8ACD6"
                             BorderThickness="0"
@@ -112,6 +221,7 @@
                         <Button
                             Content="Timeout"
                             Command="{x:Bind ViewModel.TimeoutMemberCommand}"
+                            CommandParameter="{x:Bind ViewModel.SelectedMember.UserId, Mode=OneWay}"
                             Background="#433D8B"
                             Foreground="#C8ACD6"
                             BorderThickness="0"
@@ -130,6 +240,7 @@
                         <Button
                             Content="Promote"
                             Command="{x:Bind ViewModel.PromoteCommand}"
+                            CommandParameter="{x:Bind ViewModel.SelectedMember.UserId, Mode=OneWay}"
                             Background="#433D8B"
                             Foreground="#C8ACD6"
                             BorderThickness="0"
@@ -138,6 +249,7 @@
                         <Button
                             Content="Demote"
                             Command="{x:Bind ViewModel.DemoteCommand}"
+                            CommandParameter="{x:Bind ViewModel.SelectedMember.UserId, Mode=OneWay}"
                             Background="#433D8B"
                             Foreground="#C8ACD6"
                             BorderThickness="0"

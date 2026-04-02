@@ -1,8 +1,10 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using ChatModule.Models;
 using ChatModule.Services;
+using ChatModule.src.domain.Enums;
 using ChatModule.ViewModels;
 
 namespace ChatModule.src.view_models
@@ -15,6 +17,7 @@ namespace ChatModule.src.view_models
         private Guid _conversationId;
 
         public ObservableCollection<Participant> Members { get; } = new();
+        public ObservableCollection<Participant> BannedMembers { get; } = new();
         public ObservableCollection<User> AddMemberResults { get; } = new();
 
         private Participant? _selectedMember;
@@ -51,15 +54,22 @@ namespace ChatModule.src.view_models
             set => Set(ref _isLoading, value);
         }
 
+        private bool _isAdmin;
+        public bool IsAdmin
+        {
+            get => _isAdmin;
+            private set => Set(ref _isAdmin, value);
+        }
+
         public RelayCommand LoadCommand { get; }
         public RelayCommand AddMemberCommand { get; }
         public RelayCommand ViewProfileCommand { get; }
-        public RelayCommand BanMemberCommand { get; }
-        public RelayCommand UnbanMemberCommand { get; }
-        public RelayCommand TimeoutMemberCommand { get; }
+        public RelayCommand<Guid> BanMemberCommand { get; }
+        public RelayCommand<Guid> UnbanMemberCommand { get; }
+        public RelayCommand<Guid> TimeoutMemberCommand { get; }
         public RelayCommand RemoveTimeoutCommand { get; }
-        public RelayCommand PromoteCommand { get; }
-        public RelayCommand DemoteCommand { get; }
+        public RelayCommand<Guid> PromoteCommand { get; }
+        public RelayCommand<Guid> DemoteCommand { get; }
 
         public event Action<Guid>? NavigateToProfileRequested;
 
@@ -77,12 +87,12 @@ namespace ChatModule.src.view_models
             LoadCommand = new RelayCommand(LoadAsync);
             AddMemberCommand = new RelayCommand(AddMemberAsync);
             ViewProfileCommand = new RelayCommand(ViewProfileAsync);
-            BanMemberCommand = new RelayCommand(BanMemberAsync);
-            UnbanMemberCommand = new RelayCommand(UnbanMemberAsync);
-            TimeoutMemberCommand = new RelayCommand(TimeoutMemberAsync);
+            BanMemberCommand = new RelayCommand<Guid>(BanMemberAsync);
+            UnbanMemberCommand = new RelayCommand<Guid>(UnbanMemberAsync);
+            TimeoutMemberCommand = new RelayCommand<Guid>(TimeoutMemberAsync);
             RemoveTimeoutCommand = new RelayCommand(RemoveTimeoutAsync);
-            PromoteCommand = new RelayCommand(PromoteAsync);
-            DemoteCommand = new RelayCommand(DemoteAsync);
+            PromoteCommand = new RelayCommand<Guid>(PromoteAsync);
+            DemoteCommand = new RelayCommand<Guid>(DemoteAsync);
         }
 
         public async Task InitializeAsync(Guid conversationId)
@@ -97,10 +107,20 @@ namespace ChatModule.src.view_models
             try
             {
                 var members = await _memberPanelService.GetMembersAsync(_conversationId);
+                var bannedMembers = await _memberPanelService.GetBannedMembersAsync(_conversationId);
+
+                IsAdmin = members.Any(member => member.UserId == _currentUserId && member.Role == ParticipantRole.Admin);
+
                 Members.Clear();
-                foreach (var member in members)
+                foreach (var member in members.Where(member => member.Role != ParticipantRole.Banned))
                 {
                     Members.Add(member);
+                }
+
+                BannedMembers.Clear();
+                foreach (var banned in bannedMembers)
+                {
+                    BannedMembers.Add(banned);
                 }
             }
             finally
@@ -151,31 +171,31 @@ namespace ChatModule.src.view_models
             return Task.CompletedTask;
         }
 
-        private async Task BanMemberAsync()
+        private async Task BanMemberAsync(Guid userId)
         {
-            if (SelectedMember == null)
+            if (userId == Guid.Empty)
             {
                 return;
             }
 
-            await _moderationService.BanMemberAsync(_conversationId, _currentUserId, SelectedMember.UserId);
+            await _moderationService.BanMemberAsync(_conversationId, _currentUserId, userId);
             await LoadAsync();
         }
 
-        private async Task UnbanMemberAsync()
+        private async Task UnbanMemberAsync(Guid userId)
         {
-            if (SelectedMember == null)
+            if (userId == Guid.Empty)
             {
                 return;
             }
 
-            await _moderationService.UnbanMemberAsync(_conversationId, _currentUserId, SelectedMember.UserId);
+            await _moderationService.UnbanMemberAsync(_conversationId, _currentUserId, userId);
             await LoadAsync();
         }
 
-        private async Task TimeoutMemberAsync()
+        private async Task TimeoutMemberAsync(Guid userId)
         {
-            if (SelectedMember == null)
+            if (userId == Guid.Empty)
             {
                 return;
             }
@@ -186,7 +206,7 @@ namespace ChatModule.src.view_models
                 return;
             }
 
-            await _moderationService.TimeoutMemberAsync(_conversationId, _currentUserId, SelectedMember.UserId, duration.Value);
+            await _moderationService.TimeoutMemberAsync(_conversationId, _currentUserId, userId, duration.Value);
             await LoadAsync();
         }
 
@@ -201,25 +221,25 @@ namespace ChatModule.src.view_models
             await LoadAsync();
         }
 
-        private async Task PromoteAsync()
+        private async Task PromoteAsync(Guid userId)
         {
-            if (SelectedMember == null)
+            if (userId == Guid.Empty)
             {
                 return;
             }
 
-            await _moderationService.PromoteMemberAsync(_conversationId, _currentUserId, SelectedMember.UserId);
+            await _moderationService.PromoteMemberAsync(_conversationId, _currentUserId, userId);
             await LoadAsync();
         }
 
-        private async Task DemoteAsync()
+        private async Task DemoteAsync(Guid userId)
         {
-            if (SelectedMember == null)
+            if (userId == Guid.Empty)
             {
                 return;
             }
 
-            await _moderationService.DemoteMemberAsync(_conversationId, _currentUserId, SelectedMember.UserId);
+            await _moderationService.DemoteMemberAsync(_conversationId, _currentUserId, userId);
             await LoadAsync();
         }
 
