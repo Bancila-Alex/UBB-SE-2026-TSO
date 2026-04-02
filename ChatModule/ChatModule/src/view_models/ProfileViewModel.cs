@@ -76,11 +76,50 @@ public class ProfileViewModel : BaseViewModel
     public DateTime? EditBirthday
     {
         get => _editBirthday;
-        set => Set(ref _editBirthday, value);
+        set
+        {
+            if (Set(ref _editBirthday, value))
+            {
+                OnPropertyChanged(nameof(EditBirthdayOffset));
+                OnPropertyChanged(nameof(IsBirthdayToday));
+            }
+        }
     }
 
     public RelayCommand SaveProfileCommand { get; }
     public RelayCommand LoadMutualFriendsCommand { get; }
+    public ObservableCollection<UserStatus> AvailableStatuses { get; } =
+    [
+        UserStatus.Online,
+        UserStatus.Offline,
+        UserStatus.Busy
+    ];
+
+    public DateTimeOffset EditBirthdayOffset
+    {
+        get => EditBirthday.HasValue
+            ? new DateTimeOffset(EditBirthday.Value.Date)
+            : DateTimeOffset.Now;
+        set
+        {
+            EditBirthday = value.DateTime.Date;
+            OnPropertyChanged(nameof(IsBirthdayToday));
+        }
+    }
+
+    public bool IsBirthdayToday
+    {
+        get
+        {
+            if (!EditBirthday.HasValue)
+            {
+                return false;
+            }
+
+            var today = DateTime.Today;
+            return EditBirthday.Value.Month == today.Month && EditBirthday.Value.Day == today.Day;
+        }
+    }
 
     public ProfileViewModel(
         FriendRequestService friendRequestService,
