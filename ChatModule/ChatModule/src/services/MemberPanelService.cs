@@ -50,5 +50,8 @@ namespace ChatModule.Services
             return users.Where(user => !existingUserIds.Contains(user.Id)).ToList();
         }
 
+        public async Task<User?> GetUserAsync(Guid userId)
+            => await _userRepo.GetByIdAsync(userId);
+
     }
 }
