@@ -29,6 +29,7 @@ namespace ChatModule
     /// </summary>
     public partial class App : Application
     {
+        public static Window? MainAppWindow { get; private set; }
         private Window? _window;
         public DatabaseManager? DatabaseManager { get; private set; }
 
@@ -54,6 +55,7 @@ namespace ChatModule
             }
 
             _window = new MainWindow();
+            MainAppWindow = _window;
             _window.Activate();
         }
     }

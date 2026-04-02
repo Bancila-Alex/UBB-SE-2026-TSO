@@ -3,64 +3,88 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:converters="using:ChatModule.src.views.Converters"
-    xmlns:models="using:ChatModule.Models">
+    xmlns:models="using:ChatModule.Models"
+    x:Name="RootControl">
 
     <UserControl.Resources>
         <converters:NullToVisibilityConverter x:Key="NullToVisibility" />
+        <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 
-        <DataTemplate x:Key="MessageItemTemplate" x:DataType="models:Message">
-            <StackPanel
-                Padding="8,6"
-                Margin="0,2"
-                Background="#2E236C"
-                CornerRadius="6">
+        <DataTemplate x:Key="MessageItemTemplate">
+            <Grid Margin="0,4" ColumnSpacing="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="40" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
 
-                <!-- Reply Preview (visible only when ReplyToId is set) -->
-                <Button
-                    Visibility="{x:Bind ReplyToId, Converter={StaticResource NullToVisibility}}"
+                <Border
+                    Width="36"
+                    Height="36"
                     Background="#433D8B"
-                    BorderThickness="0"
-                    CornerRadius="4"
-                    Padding="6,4"
-                    Margin="0,0,0,4"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Left">
-                    <StackPanel>
+                    CornerRadius="18"
+                    VerticalAlignment="Top">
+                    <TextBlock
+                        Text="{Binding UserId}"
+                        FontSize="0.1"
+                        Opacity="0" />
+                </Border>
+
+                <Border
+                    Grid.Column="1"
+                    Padding="10,8"
+                    Background="#2E236C"
+                    CornerRadius="10">
+                    <StackPanel Spacing="4">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock
+                                Text="{Binding UserId}"
+                                Foreground="#C8ACD6"
+                                FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
+                                FontSize="13"
+                                FontWeight="SemiBold"
+                                TextTrimming="CharacterEllipsis" />
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                <TextBlock
+                                    Text="{Binding CreatedAt}"
+                                    Foreground="#C8ACD6"
+                                    FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                                    FontSize="11"
+                                    Opacity="0.85" />
+                                <TextBlock
+                                    Text="edited"
+                                    Foreground="#C8ACD6"
+                                    FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                                    FontSize="11"
+                                    FontStyle="Italic"
+                                    Visibility="{Binding IsEdited, Converter={StaticResource BoolToVisibility}}" />
+                            </StackPanel>
+                        </Grid>
+
                         <TextBlock
-                            Text="↩ Reply"
-                            Foreground="#C8ACD6"
-                            FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
-                            FontSize="11"
-                            FontWeight="SemiBold" />
-                        <TextBlock
-                            Text="{x:Bind Content}"
+                            Text="{Binding Content}"
                             Foreground="#C8ACD6"
                             FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
-                            FontSize="12"
-                            Opacity="0.7"
-                            MaxLines="1"
-                            TextTrimming="CharacterEllipsis" />
+                            FontSize="14"
+                            TextWrapping="Wrap"
+                            Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
+
+                        <TextBlock
+                            Text="This message was deleted"
+                            Foreground="#C8ACD6"
+                            FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                            FontSize="14"
+                            FontStyle="Italic"
+                            Opacity="0.8"
+                            Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}}" />
                     </StackPanel>
-                </Button>
-
-                <!-- Message Content -->
-                <TextBlock
-                    Text="{x:Bind Content}"
-                    Foreground="#C8ACD6"
-                    FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
-                    FontSize="14"
-                    TextWrapping="Wrap" />
-
-                <!-- Edited indicator -->
-                <TextBlock
-                    Text="(edited)"
-                    Foreground="#C8ACD6"
-                    FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
-                    FontSize="11"
-                    Opacity="0.5"
-                    Visibility="{x:Bind IsEdited, Mode=OneWay}" />
-
-            </StackPanel>
+                </Border>
+            </Grid>
         </DataTemplate>
     </UserControl.Resources>
 
@@ -167,7 +191,7 @@
                 BorderThickness="0"
                 CornerRadius="4"
                 Padding="10,8"
-                IsEnabled="{x:Bind ViewModel.IsInputDisabled, Mode=OneWay, Converter={StaticResource NullToVisibility}}" />
+                IsEnabled="{x:Bind ViewModel.IsInputDisabled, Mode=OneWay}" />
             <Button
                 Grid.Column="1"
                 Content="Send"
