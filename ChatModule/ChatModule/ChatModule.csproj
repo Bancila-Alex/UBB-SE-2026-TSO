@@ -14,8 +14,6 @@
     <Nullable>enable</Nullable>
 </PropertyGroup>
   <ItemGroup>
-    <Page Remove="src\views\FriendListView.xaml" />
-    <Compile Remove="src\views\FriendListView.xaml.cs" />
     <Page Remove="src\views\LoginWindow.xaml" />
     <Compile Remove="src\views\LoginWindow.xaml.cs" />
   </ItemGroup>

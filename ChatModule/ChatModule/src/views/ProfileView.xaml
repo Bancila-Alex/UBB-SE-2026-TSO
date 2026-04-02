@@ -44,21 +44,38 @@
                     </Grid>
 
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6">
-                        <TextBlock
-                            Text="{x:Bind ViewModel.User.Username, Mode=OneWay}"
-                            Foreground="#C8ACD6"
-                            FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
-                            FontSize="18"
-                            FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock
+                                Text="{x:Bind ViewModel.User.Username, Mode=OneWay}"
+                                Foreground="#C8ACD6"
+                                FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
+                                FontSize="18"
+                                FontWeight="SemiBold" />
+                            <TextBlock
+                                Text="🎂"
+                                FontSize="18"
+                                VerticalAlignment="Center"
+                                Visibility="{x:Bind ViewModel.IsBirthdayToday, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                        </StackPanel>
 
                         <Button
                             Content="Upload Avatar"
+                            Click="OnUploadAvatarClicked"
                             Background="#433D8B"
                             Foreground="#C8ACD6"
                             BorderThickness="0"
                             CornerRadius="4"
                             HorizontalAlignment="Left"
                             Padding="12,6" />
+
+                        <TextBlock
+                            Text="{x:Bind ViewModel.EditAvatarUrl, Mode=OneWay}"
+                            Foreground="#C8ACD6"
+                            Opacity="0.75"
+                            MaxLines="1"
+                            TextTrimming="CharacterEllipsis"
+                            FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                            FontSize="12" />
                     </StackPanel>
                 </Grid>
 
@@ -113,21 +130,12 @@
                             FontSize="14"
                             FontWeight="SemiBold" />
 
-                        <Grid>
-                            <DatePicker
-                                Date="{x:Bind ViewModel.EditBirthdayOffset, Mode=TwoWay}"
-                                Background="#433D8B"
-                                Foreground="#C8ACD6"
-                                BorderThickness="0"
-                                FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans" />
-                            <TextBlock
-                                Text="🎂"
-                                FontSize="18"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Center"
-                                Margin="0,0,8,0"
-                                Visibility="{x:Bind ViewModel.IsBirthdayToday, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
-                        </Grid>
+                        <DatePicker
+                            Date="{x:Bind ViewModel.EditBirthdayOffset, Mode=TwoWay}"
+                            Background="#433D8B"
+                            Foreground="#C8ACD6"
+                            BorderThickness="0"
+                            FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans" />
                     </StackPanel>
                 </Grid>
 
@@ -179,12 +187,19 @@
                     </Grid>
 
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">
-                        <TextBlock
-                            Text="{x:Bind ViewModel.User.Username, Mode=OneWay}"
-                            Foreground="#C8ACD6"
-                            FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
-                            FontSize="18"
-                            FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock
+                                Text="{x:Bind ViewModel.User.Username, Mode=OneWay}"
+                                Foreground="#C8ACD6"
+                                FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
+                                FontSize="18"
+                                FontWeight="SemiBold" />
+                            <TextBlock
+                                Text="🎂"
+                                FontSize="18"
+                                VerticalAlignment="Center"
+                                Visibility="{x:Bind ViewModel.IsBirthdayToday, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                        </StackPanel>
 
                         <Border
                             Background="#433D8B"
@@ -228,20 +243,11 @@
                         FontSize="14"
                         FontWeight="SemiBold" />
 
-                    <Grid>
-                        <TextBlock
-                            Text="{x:Bind ViewModel.BirthdayText, Mode=OneWay}"
-                            Foreground="#C8ACD6"
-                            FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
-                            FontSize="14" />
-                        <TextBlock
-                            Text="🎂"
-                            FontSize="18"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Center"
-                            Margin="0,0,8,0"
-                            Visibility="{x:Bind ViewModel.IsBirthdayToday, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
-                    </Grid>
+                    <TextBlock
+                        Text="{x:Bind ViewModel.BirthdayText, Mode=OneWay}"
+                        Foreground="#C8ACD6"
+                        FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                        FontSize="14" />
                 </StackPanel>
 
                 <Button
