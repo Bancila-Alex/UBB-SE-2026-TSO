@@ -14,12 +14,24 @@ namespace ChatModule.src.view_models
         private readonly Guid _currentUserId;
 
         public ObservableCollection<User> Friends { get; } = new();
+        public ObservableCollection<FriendListItemViewModel> FriendItems { get; } = new();
+
+        public bool HasFriends => FriendItems.Count > 0;
+        public bool ShowFriendList => !IsLoading && HasFriends;
+        public bool ShowEmptyState => !IsLoading && !HasFriends;
 
         private bool _isLoading;
         public bool IsLoading
         {
             get => _isLoading;
-            set => Set(ref _isLoading, value);
+            set
+            {
+                if (Set(ref _isLoading, value))
+                {
+                    OnPropertyChanged(nameof(ShowFriendList));
+                    OnPropertyChanged(nameof(ShowEmptyState));
+                }
+            }
         }
 
         public event Action<Guid>? NavigateToChatRequested;
@@ -34,6 +46,13 @@ namespace ChatModule.src.view_models
         {
             _friendListService = friendListService ?? throw new ArgumentNullException(nameof(friendListService));
             _currentUserId = currentUserId;
+
+            FriendItems.CollectionChanged += (_, _) =>
+            {
+                OnPropertyChanged(nameof(HasFriends));
+                OnPropertyChanged(nameof(ShowFriendList));
+                OnPropertyChanged(nameof(ShowEmptyState));
+            };
 
             LoadCommand = new RelayCommand(LoadFriendsAsync);
             OpenDmCommand = new RelayCommand<Guid>(OpenDmAsync);
@@ -62,9 +81,11 @@ namespace ChatModule.src.view_models
             {
                 var friends = await _friendListService.GetFriendsAsync(_currentUserId);
                 Friends.Clear();
+                FriendItems.Clear();
                 foreach (var friend in friends)
                 {
                     Friends.Add(friend);
+                    FriendItems.Add(new FriendListItemViewModel(friend));
                 }
             }
             finally
