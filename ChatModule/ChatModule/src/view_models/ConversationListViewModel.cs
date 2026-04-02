@@ -63,22 +63,27 @@ namespace ChatModule.ViewModels
             set => Set(ref _isLoading, value);
         }
 
-        public RelayCommand         LoadCommand      { get; }
-        public RelayCommand<string> SwitchTabCommand { get; }
-        public RelayCommand         NewGroupCommand  { get; }
-        public RelayCommand         NewDmCommand     { get; }
+        public RelayCommand           LoadCommand             { get; }
+        public RelayCommand<string>   SwitchTabCommand        { get; }
+        public RelayCommand           NewGroupCommand         { get; }
+        public RelayCommand           NewDmCommand            { get; }
+        public RelayCommand<Guid>     ToggleFavouriteCommand  { get; }
+        public RelayCommand<Guid>     OpenConversationCommand { get; }
 
         public event Action? NewGroupRequested;
         public event Action? NewDmRequested;
+        public event Action<Guid>? ConversationOpened;
 
         public ConversationListViewModel(ConversationListService conversationListService, Guid currentUserId)
         {
             _conversationListService = conversationListService ?? throw new ArgumentNullException(nameof(conversationListService));
             _currentUserId = currentUserId;
-            LoadCommand = new RelayCommand(LoadTabAsync);
-            SwitchTabCommand = new RelayCommand<string>(SwitchTabAsync);
-            NewGroupCommand = new RelayCommand(RequestNewGroupAsync);
-            NewDmCommand = new RelayCommand(RequestNewDmAsync);
+            LoadCommand             = new RelayCommand(LoadTabAsync);
+            SwitchTabCommand        = new RelayCommand<string>(SwitchTabAsync);
+            NewGroupCommand         = new RelayCommand(RequestNewGroupAsync);
+            NewDmCommand            = new RelayCommand(RequestNewDmAsync);
+            ToggleFavouriteCommand  = new RelayCommand<Guid>(ToggleFavouriteAsync);
+            OpenConversationCommand = new RelayCommand<Guid>(OpenConversationAsync);
         }
 
         private async Task LoadTabAsync()
@@ -145,6 +150,20 @@ namespace ChatModule.ViewModels
         private Task RequestNewDmAsync()
         {
             NewDmRequested?.Invoke();
+            return Task.CompletedTask;
+        }
+
+        private async Task ToggleFavouriteAsync(Guid conversationId)
+        {
+            var favourites = await _conversationListService.GetFavouritesAsync(_currentUserId);
+            bool isFavourite = favourites.Exists(c => c.Id == conversationId);
+            await _conversationListService.SetFavouriteAsync(conversationId, _currentUserId, !isFavourite);
+            await LoadTabAsync();
+        }
+
+        private Task OpenConversationAsync(Guid conversationId)
+        {
+            ConversationOpened?.Invoke(conversationId);
             return Task.CompletedTask;
         }
 
