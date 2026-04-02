@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -28,6 +29,10 @@ namespace ChatModule.ViewModels
             {
                 await _execute();
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"RelayCommand execution failed: {ex}");
+            }
             finally
             {
                 _running = false;
@@ -53,8 +58,17 @@ namespace ChatModule.ViewModels
 
         public async void Execute(object? parameter)
         {
-            if (parameter is T t)
-                await _execute(t);
+            try
+            {
+                if (parameter is T t)
+                {
+                    await _execute(t);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"RelayCommand<{typeof(T).Name}> execution failed: {ex}");
+            }
         }
     }
 }

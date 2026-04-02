@@ -95,7 +95,17 @@ namespace ChatModule.src.views
             ViewModel.RegisterRequested += OnRegisterRequested;
             ViewModel.ForgotPasswordRequested += OnForgotPasswordRequested;
             ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+            Closed += OnClosed;
             UpdateUiState();
+        }
+
+        private void OnClosed(object sender, WindowEventArgs args)
+        {
+            ViewModel.LoginSucceeded -= OnLoginSucceededAsync;
+            ViewModel.RegisterRequested -= OnRegisterRequested;
+            ViewModel.ForgotPasswordRequested -= OnForgotPasswordRequested;
+            ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            Closed -= OnClosed;
         }
 
         private Task OnLoginSucceededAsync(Guid userId, string username)
@@ -130,7 +140,14 @@ namespace ChatModule.src.views
         {
             if (e.PropertyName == nameof(LoginViewModel.IsLoading) || e.PropertyName == nameof(LoginViewModel.ErrorMessage))
             {
-                UpdateUiState();
+                try
+                {
+                    UpdateUiState();
+                }
+                catch
+                {
+                    // Ignore updates while/after the window is closing.
+                }
             }
         }
 

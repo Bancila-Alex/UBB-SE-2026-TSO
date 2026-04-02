@@ -10,6 +10,7 @@
         <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
         <converters:NullToVisibilityConverter x:Key="NullToVisibility" />
         <converters:StringFallbackConverter x:Key="StringFallback" />
+        <converters:StringToImageSourceConverter x:Key="StringToImageSource" />
     </UserControl.Resources>
 
     <Grid Background="#17153B">
@@ -213,7 +214,7 @@
                                 <Grid Grid.Column="0" Width="42" Height="42">
                                     <Ellipse Fill="#433D8B" />
                                     <Image
-                                        Source="{x:Bind IconUrl}"
+                                        Source="{x:Bind IconUrl, Converter={StaticResource StringToImageSource}}"
                                         Stretch="UniformToFill"
                                         Visibility="{x:Bind IconUrl, Converter={StaticResource NullToVisibility}}" />
                                 </Grid>

@@ -8,6 +8,7 @@
 
     <UserControl.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+        <converters:StringToImageSourceConverter x:Key="StringToImageSource" />
     </UserControl.Resources>
 
     <Grid Background="#17153B">
@@ -36,11 +37,11 @@
 
                     <Grid Grid.Column="0" Margin="0,0,16,0">
                         <Ellipse Width="84" Height="84" Fill="#433D8B" />
-                        <TextBlock
-                            Text="{x:Bind ViewModel.User.Username, Mode=OneWay}"
-                            Foreground="#C8ACD6"
-                            FontSize="0.1"
-                            Opacity="0" />
+                        <Image
+                            Width="84"
+                            Height="84"
+                            Source="{x:Bind ViewModel.EditAvatarUrl, Mode=OneWay, Converter={StaticResource StringToImageSource}}"
+                            Stretch="UniformToFill" />
                     </Grid>
 
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6">
@@ -179,11 +180,11 @@
 
                     <Grid Grid.Column="0" Margin="0,0,16,0">
                         <Ellipse Width="84" Height="84" Fill="#433D8B" />
-                        <TextBlock
-                            Text="{x:Bind ViewModel.User.AvatarUrl, Mode=OneWay}"
-                            Foreground="#C8ACD6"
-                            FontSize="0.1"
-                            Opacity="0" />
+                        <Image
+                            Width="84"
+                            Height="84"
+                            Source="{x:Bind ViewModel.User.AvatarUrl, Mode=OneWay, Converter={StaticResource StringToImageSource}}"
+                            Stretch="UniformToFill" />
                     </Grid>
 
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">

@@ -29,6 +29,11 @@ namespace ChatModule.Services
 
         public async Task SendRequestAsync(Guid senderId, Guid receiverId)
         {
+            if (senderId == receiverId)
+            {
+                throw new InvalidOperationException("You cannot send a friend request to yourself.");
+            }
+
             var alreadyFriends = await _friendRepository.IsFriendAsync(senderId, receiverId);
             if (alreadyFriends)
             {
@@ -50,6 +55,23 @@ namespace ChatModule.Services
                 IsMatch = false,
                 CreatedAt = DateTime.UtcNow
             });
+        }
+
+        public async Task<bool> SendRequestByUsernameAsync(Guid senderId, string receiverUsername)
+        {
+            if (string.IsNullOrWhiteSpace(receiverUsername))
+            {
+                throw new InvalidOperationException("Please enter a username.");
+            }
+
+            var receiver = await _userRepository.GetByUsernameAsync(receiverUsername.Trim());
+            if (receiver == null)
+            {
+                return false;
+            }
+
+            await SendRequestAsync(senderId, receiver.Id);
+            return true;
         }
 
         public async Task AcceptRequestAsync(Guid currentUserId, Guid requesterId)

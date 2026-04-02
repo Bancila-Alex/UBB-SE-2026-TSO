@@ -144,6 +144,10 @@ namespace ChatModule.src.view_models
             ScrollToMessageCommand = new RelayCommand<Guid>(ScrollToMessageAsync);
             SendCommand = new RelayCommand(SendAsync);
             CancelReplyCommand = new RelayCommand(CancelReplyAsync);
+            LoadMoreCommand = new RelayCommand(LoadMoreAsync);
+            EditMessageCommand = new RelayCommand<Guid>(StartEditAsync);
+            DeleteMessageCommand = new RelayCommand<Guid>(DeleteAsync);
+            CancelEditCommand = new RelayCommand(CancelEditAsync);
             ReplyToCommand = new RelayCommand<Guid>(ReplyToAsync);
             InsertMentionCommand = new RelayCommand<User>(InsertMentionAsync);
             ReactWithSpecificEmojiCommand = new RelayCommand<Tuple<Guid, string>>(ReactWithSpecificEmojiAsync);

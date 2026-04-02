@@ -85,7 +85,7 @@ namespace ChatModule
             {
                 if (args.PropertyName == nameof(MainViewModel.CurrentPage))
                 {
-                    RenderCurrentPage();
+                    SafeRenderCurrentPage();
                 }
             };
             ViewModel.NavigateToChatRequested += conversationId => _ = OpenChatAsync(conversationId);
@@ -95,13 +95,14 @@ namespace ChatModule
                 var db = (Application.Current as App)?.DatabaseManager
                          ?? new DatabaseManager("Data Source=localhost;Initial Catalog=ChatModule;Integrated Security=True;Encrypt=False;TrustServerCertificate=True;");
                 var loginWindow = new LoginWindow(new AuthService(new UserRepository(db)));
-                loginWindow.LoginSucceeded += async (userId, username) =>
+                loginWindow.LoginSucceeded += (userId, username) =>
                 {
                     var nextMain = new MainWindow(userId, username);
+                    App.SetMainWindow(nextMain);
                     nextMain.Activate();
                     loginWindow.Close();
                     Close();
-                    await System.Threading.Tasks.Task.CompletedTask;
+                    return Task.CompletedTask;
                 };
                 loginWindow.Activate();
             };
@@ -111,8 +112,18 @@ namespace ChatModule
 
         private async System.Threading.Tasks.Task InitialiseAndRenderAsync()
         {
-            await ViewModel.InitialiseAsync(_initialUserId, _initialUsername);
-            RenderCurrentPage();
+            try
+            {
+                await ViewModel.InitialiseAsync(_initialUserId, _initialUsername);
+                SafeRenderCurrentPage();
+            }
+            catch (Exception ex)
+            {
+                if (CurrentPageHost.XamlRoot != null)
+                {
+                    await ShowInfoDialogAsync("Startup error", ex.Message);
+                }
+            }
         }
 
         private void RenderCurrentPage()
@@ -128,6 +139,22 @@ namespace ChatModule
             };
 
             CurrentPageHost.Content = view;
+        }
+
+        private void SafeRenderCurrentPage()
+        {
+            try
+            {
+                RenderCurrentPage();
+            }
+            catch (Exception ex)
+            {
+                CurrentPageHost.Content = new TextBlock
+                {
+                    Text = $"Failed to render page: {ex.Message}",
+                    Margin = new Thickness(16)
+                };
+            }
         }
 
         private ConversationListView BuildConversationListView(ConversationListViewModel vm)

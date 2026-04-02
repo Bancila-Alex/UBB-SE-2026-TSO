@@ -98,9 +98,10 @@ namespace ChatModule.ViewModels
         {
             if (_friendListService != null)
             {
-                var friendListViewModel = new FriendListViewModel(_friendListService, _directMessageService, CurrentUserId);
+                var friendListViewModel = new FriendListViewModel(_friendListService, _friendRequestService, _directMessageService, CurrentUserId);
                 friendListViewModel.NavigateToProfileRequested += OnNavigateToProfileFromFriends;
                 friendListViewModel.NavigateToChatRequested += OnNavigateToChatFromFriends;
+                friendListViewModel.OpenRequestsRequested += OnOpenRequestsFromFriends;
                 CurrentPage = friendListViewModel;
                 return Task.CompletedTask;
             }
@@ -120,6 +121,13 @@ namespace ChatModule.ViewModels
         private void OnNavigateToChatFromFriends(Guid conversationId)
         {
             NavigateToChatRequested?.Invoke(conversationId);
+        }
+
+        private void OnOpenRequestsFromFriends()
+        {
+            var friendRequestsViewModel = new FriendRequestsViewModel(_friendRequestService, CurrentUserId);
+            friendRequestsViewModel.NavigateBackRequested += () => _ = GoToFriendsAsync();
+            CurrentPage = friendRequestsViewModel;
         }
 
         private async Task ShowProfileAsync(Guid targetUserId)

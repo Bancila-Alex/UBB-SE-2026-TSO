@@ -10,6 +10,7 @@ namespace ChatModule.src.view_models
     public class FriendListViewModel : BaseViewModel
     {
         private readonly FriendListService _friendListService;
+        private readonly FriendRequestService _friendRequestService;
         private DirectMessageService? _directMessageService;
         private readonly Guid _currentUserId;
 
@@ -36,15 +37,36 @@ namespace ChatModule.src.view_models
 
         public event Action<Guid>? NavigateToChatRequested;
         public event Action<Guid>? NavigateToProfileRequested;
+        public event Action? OpenRequestsRequested;
 
         public RelayCommand LoadCommand { get; }
         public RelayCommand<Guid> OpenDmCommand { get; }
         public RelayCommand<Guid> ViewProfileCommand { get; }
         public RelayCommand<Guid> RemoveFriendCommand { get; }
+        public RelayCommand SendFriendRequestCommand { get; }
+        public RelayCommand OpenRequestsCommand { get; }
 
-        public FriendListViewModel(FriendListService friendListService, Guid currentUserId)
+        private string _friendUsernameInput = string.Empty;
+        public string FriendUsernameInput
+        {
+            get => _friendUsernameInput;
+            set => Set(ref _friendUsernameInput, value);
+        }
+
+        private string? _friendActionMessage;
+        public string? FriendActionMessage
+        {
+            get => _friendActionMessage;
+            set => Set(ref _friendActionMessage, value);
+        }
+
+        public FriendListViewModel(
+            FriendListService friendListService,
+            FriendRequestService friendRequestService,
+            Guid currentUserId)
         {
             _friendListService = friendListService ?? throw new ArgumentNullException(nameof(friendListService));
+            _friendRequestService = friendRequestService ?? throw new ArgumentNullException(nameof(friendRequestService));
             _currentUserId = currentUserId;
 
             FriendItems.CollectionChanged += (_, _) =>
@@ -58,13 +80,16 @@ namespace ChatModule.src.view_models
             OpenDmCommand = new RelayCommand<Guid>(OpenDmAsync);
             ViewProfileCommand = new RelayCommand<Guid>(ViewProfileAsync);
             RemoveFriendCommand = new RelayCommand<Guid>(RemoveFriendAsync);
+            SendFriendRequestCommand = new RelayCommand(SendFriendRequestAsync);
+            OpenRequestsCommand = new RelayCommand(OpenRequestsAsync);
         }
 
         public FriendListViewModel(
             FriendListService friendListService,
+            FriendRequestService friendRequestService,
             DirectMessageService directMessageService,
             Guid currentUserId)
-            : this(friendListService, currentUserId)
+            : this(friendListService, friendRequestService, currentUserId)
         {
             _directMessageService = directMessageService ?? throw new ArgumentNullException(nameof(directMessageService));
         }
@@ -130,6 +155,40 @@ namespace ChatModule.src.view_models
 
             await _friendListService.RemoveFriendAsync(_currentUserId, userId);
             await LoadFriendsAsync();
+        }
+
+        private async Task SendFriendRequestAsync()
+        {
+            FriendActionMessage = null;
+
+            if (string.IsNullOrWhiteSpace(FriendUsernameInput))
+            {
+                FriendActionMessage = "Enter a username first.";
+                return;
+            }
+
+            try
+            {
+                var sent = await _friendRequestService.SendRequestByUsernameAsync(_currentUserId, FriendUsernameInput);
+                if (!sent)
+                {
+                    FriendActionMessage = "User not found.";
+                    return;
+                }
+
+                FriendActionMessage = "Friend request sent.";
+                FriendUsernameInput = string.Empty;
+            }
+            catch (Exception ex)
+            {
+                FriendActionMessage = ex.Message;
+            }
+        }
+
+        private Task OpenRequestsAsync()
+        {
+            OpenRequestsRequested?.Invoke();
+            return Task.CompletedTask;
         }
     }
 }

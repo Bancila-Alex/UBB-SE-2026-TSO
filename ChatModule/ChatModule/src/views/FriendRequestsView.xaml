@@ -7,6 +7,7 @@
     x:Name="RootControl">
 
     <UserControl.Resources>
+        <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
         <converters:NullToVisibilityConverter x:Key="NullToVisibility" />
     </UserControl.Resources>
 
@@ -50,7 +51,7 @@
             <!-- Loading Spinner -->
             <ProgressRing
                 IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
-                Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
+                Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibility}}"
                 Foreground="#433D8B"
                 Width="40"
                 Height="40"
@@ -63,7 +64,7 @@
                 Background="Transparent"
                 Padding="8"
                 SelectionMode="None"
-                Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource NullToVisibility}}">
+                Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="models:User">
                         <Border
@@ -139,7 +140,8 @@
                     <Binding
                         ElementName="RootControl"
                         Path="ViewModel.IncomingRequests.Count"
-                        Converter="{StaticResource NullToVisibility}" />
+                        Converter="{StaticResource BoolToVisibility}"
+                        ConverterParameter="Invert" />
                 </StackPanel.Visibility>
                 <TextBlock
                     Text="No pending friend requests"

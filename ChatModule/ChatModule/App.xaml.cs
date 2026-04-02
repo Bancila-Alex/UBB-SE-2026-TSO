@@ -35,6 +35,11 @@ namespace ChatModule
         private Window? _window;
         public DatabaseManager? DatabaseManager { get; private set; }
 
+        public static void SetMainWindow(Window window)
+        {
+            MainAppWindow = window;
+        }
+
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().
@@ -42,6 +47,7 @@ namespace ChatModule
         public App()
         {
             InitializeComponent();
+            UnhandledException += OnUnhandledException;
         }
 
         /// <summary>
@@ -64,16 +70,49 @@ namespace ChatModule
             var loginWindow = new LoginWindow(authService);
             loginWindow.LoginSucceeded += (userId, username) =>
             {
-                var mainWindow = new MainWindow(userId, username);
-                MainAppWindow = mainWindow;
-                mainWindow.Activate();
-                loginWindow.Close();
+                try
+                {
+                    var mainWindow = new MainWindow(userId, username);
+                    MainAppWindow = mainWindow;
+                    _window = mainWindow;
+                    mainWindow.Activate();
+                    loginWindow.DispatcherQueue.TryEnqueue(() => loginWindow.Close());
+                }
+                catch (Exception ex)
+                {
+                    LogException("LoginSuccessTransition", ex.ToString());
+                    loginWindow.ViewModel.ErrorMessage = "Failed to open main window. See crash log.";
+                }
+
                 return System.Threading.Tasks.Task.CompletedTask;
             };
 
             _window = loginWindow;
             MainAppWindow = _window;
             _window.Activate();
+        }
+
+        private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+        {
+            LogException("UnhandledException", e.Exception?.ToString() ?? e.Message);
+            e.Handled = true;
+        }
+
+        private static void LogException(string source, string details)
+        {
+            try
+            {
+                var directory = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ChatModule");
+                Directory.CreateDirectory(directory);
+                var filePath = System.IO.Path.Combine(directory, "crash.log");
+                var entry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {source}{Environment.NewLine}{details}{Environment.NewLine}{new string('-', 80)}{Environment.NewLine}";
+                File.AppendAllText(filePath, entry);
+                Debug.WriteLine(entry);
+            }
+            catch
+            {
+                // Intentionally ignored to avoid recursive failure while logging crashes.
+            }
         }
     }
 }
