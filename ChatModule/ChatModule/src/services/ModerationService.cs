@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using ChatModule.Models;
 using ChatModule.Repositories;
 using ChatModule.src.domain.Enums;
+using ChatModule.src.domain;
 
 namespace ChatModule.Services
 {
@@ -46,6 +47,45 @@ namespace ChatModule.Services
         {
             await RequireAdminAsync(conversationId, adminId);
             await _participantRepository.UpdateTimeoutAsync(conversationId, targetId, null);
+        }
+
+        public async Task PromoteMemberAsync(Guid conversationId, Guid adminId, Guid targetId)
+        {
+            await RequireAdminAsync(conversationId, adminId);
+            await _participantRepository.UpdateRoleAsync(conversationId, targetId, ParticipantRole.Admin);
+            await WriteSystemMessageAsync(conversationId, $"User {targetId} was promoted to admin.");
+        }
+
+        public async Task DemoteMemberAsync(Guid conversationId, Guid adminId, Guid targetId)
+        {
+            await RequireAdminAsync(conversationId, adminId);
+            await _participantRepository.UpdateRoleAsync(conversationId, targetId, ParticipantRole.Member);
+            await WriteSystemMessageAsync(conversationId, $"User {targetId} was demoted to member.");
+        }
+
+        public async Task AddMemberAsync(Guid conversationId, Guid adminId, Guid newUserId)
+        {
+            await RequireAdminAsync(conversationId, adminId);
+
+            var existing = await _participantRepository.GetAsync(conversationId, newUserId);
+            if (existing != null)
+            {
+                throw new InvalidOperationException("User is already a participant of this conversation.");
+            }
+
+            await _participantRepository.CreateAsync(new Participant
+            {
+                Id = Guid.NewGuid(),
+                ConversationId = conversationId,
+                UserId = newUserId,
+                JoinedAt = DateTime.UtcNow,
+                Role = ParticipantRole.Member,
+                LastReadMessageId = null,
+                TimeoutUntil = null,
+                IsFavourite = false
+            });
+
+            await WriteSystemMessageAsync(conversationId, $"User {newUserId} was added to the group.");
         }
 
         private async Task RequireAdminAsync(Guid conversationId, Guid userId)
