@@ -41,12 +41,18 @@ namespace ChatModule.Services
         {
             await RequireAdminAsync(conversationId, adminId);
             await _participantRepository.UpdateTimeoutAsync(conversationId, targetId, DateTime.UtcNow + duration);
+            var user = await _userRepository.GetByIdAsync(targetId);
+            var username = user?.Username ?? targetId.ToString();
+            await WriteSystemMessageAsync(conversationId, $"{username} was timed out for {FormatDuration(duration)}.");
         }
 
         public async Task RemoveTimeoutAsync(Guid conversationId, Guid adminId, Guid targetId)
         {
             await RequireAdminAsync(conversationId, adminId);
             await _participantRepository.UpdateTimeoutAsync(conversationId, targetId, null);
+            var user = await _userRepository.GetByIdAsync(targetId);
+            var username = user?.Username ?? targetId.ToString();
+            await WriteSystemMessageAsync(conversationId, $"Timeout removed for {username}.");
         }
 
         public async Task PromoteMemberAsync(Guid conversationId, Guid adminId, Guid targetId)
@@ -112,6 +118,30 @@ namespace ChatModule.Services
                 MessageType = MessageType.System,
                 ParentMessageId = null
             });
+        }
+
+        private static string FormatDuration(TimeSpan duration)
+        {
+            var totalSeconds = Math.Max(0, (int)Math.Round(duration.TotalSeconds));
+            var days = totalSeconds / 86400;
+            totalSeconds %= 86400;
+            var hours = totalSeconds / 3600;
+            totalSeconds %= 3600;
+            var minutes = totalSeconds / 60;
+
+            if (days > 0)
+            {
+                return days == 1 ? "1 day" : $"{days} days";
+            }
+
+            if (hours > 0)
+            {
+                return minutes > 0
+                    ? (hours == 1 ? $"1 hour {minutes} minutes" : $"{hours} hours {minutes} minutes")
+                    : (hours == 1 ? "1 hour" : $"{hours} hours");
+            }
+
+            return minutes == 1 ? "1 minute" : $"{minutes} minutes";
         }
     }
 }

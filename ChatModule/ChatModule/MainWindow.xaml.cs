@@ -3,6 +3,7 @@ using ChatModule.Services;
 using ChatModule.ViewModels;
 using ChatModule.src.view_models;
 using ChatModule.src.views;
+using ChatModule.src.domain.Enums;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
@@ -26,6 +27,11 @@ namespace ChatModule
         private readonly MessageInteractionService _messageInteractionService;
         private readonly ReadReceiptService _readReceiptService;
         private readonly MentionService _mentionService;
+        private readonly FriendRequestService _friendRequestService;
+        private readonly BlockService _blockService;
+        private readonly ProfileService _profileService;
+        private readonly MemberPanelService _memberPanelService;
+        private readonly ModerationService _moderationService;
 
         public MainWindow()
             : this(Guid.Empty, "guest")
@@ -70,6 +76,11 @@ namespace ChatModule
             _messageInteractionService = messageInteractionService;
             _readReceiptService = readReceiptService;
             _mentionService = mentionService;
+            _friendRequestService = friendRequestService;
+            _blockService = blockService;
+            _profileService = profileService;
+            _memberPanelService = new MemberPanelService(participantRepository, userRepository, friendRepository);
+            _moderationService = new ModerationService(participantRepository, messageRepository, userRepository);
 
             ViewModel = new MainViewModel(
                 conversationListService,
@@ -274,6 +285,12 @@ namespace ChatModule
 
         private async Task OpenChatAsync(Guid conversationId)
         {
+            var conversation = await _conversationRepository.GetByIdAsync(conversationId);
+            if (conversation == null)
+            {
+                return;
+            }
+
             var chatViewModel = new ChatViewModel(
                 _messageService,
                 _messageInteractionService,
@@ -285,7 +302,36 @@ namespace ChatModule
                 ViewModel.CurrentUserId);
 
             await chatViewModel.LoadAsync(conversationId);
-            CurrentPageHost.Content = new ChatView(chatViewModel);
+
+            var chatView = new ChatView(chatViewModel);
+
+            if (conversation.Type == ConversationType.Group)
+            {
+                var memberPanelViewModel = new MemberPanelViewModel(_memberPanelService, _moderationService, ViewModel.CurrentUserId);
+                memberPanelViewModel.NavigateToProfileRequested += async userId =>
+                {
+                    var profileVm = new ProfileViewModel(_friendRequestService, _blockService, _directMessageService, _profileService, ViewModel.CurrentUserId);
+                    await profileVm.LoadAsync(userId);
+                    var profilePanelVm = new ConversationSidePanelViewModel(ConversationType.Dm, profileVm);
+                    chatView.SetSidePanel(new ConversationSidePanelView(profilePanelVm));
+                };
+                await memberPanelViewModel.LoadAsync(conversationId);
+                var sideVm = new ConversationSidePanelViewModel(ConversationType.Group, memberPanelViewModel);
+                chatView.SetSidePanel(new ConversationSidePanelView(sideVm));
+            }
+            else
+            {
+                var otherUser = await _directMessageService.GetOtherUserAsync(conversationId, ViewModel.CurrentUserId);
+                if (otherUser != null)
+                {
+                    var profileVm = new ProfileViewModel(_friendRequestService, _blockService, _directMessageService, _profileService, ViewModel.CurrentUserId);
+                    await profileVm.LoadAsync(otherUser.Id);
+                    var sideVm = new ConversationSidePanelViewModel(ConversationType.Dm, profileVm);
+                    chatView.SetSidePanel(new ConversationSidePanelView(sideVm));
+                }
+            }
+
+            CurrentPageHost.Content = chatView;
         }
     }
 }

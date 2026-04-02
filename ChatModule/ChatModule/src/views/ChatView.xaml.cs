@@ -25,6 +25,7 @@ namespace ChatModule.src.views
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             AttachSearchPanel();
+            _ = ViewModel.MarkConversationAsReadAsync();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -50,11 +51,16 @@ namespace ChatModule.src.views
             SearchPanelHost.Content = new MessageSearchPanel(ViewModel.MessageSearch);
         }
 
+        public void SetSidePanel(UserControl panel)
+        {
+            SidePanelHost.Content = panel;
+        }
+
         private void OnMessagesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             if (ViewModel.Messages.Count > 0)
             {
-                _ = ViewModel.MarkVisibleMessagesAsReadAsync(ViewModel.Messages[0].Id);
+                _ = ViewModel.MarkVisibleMessagesAsReadAsync(ViewModel.Messages[^1].Id);
             }
         }
 

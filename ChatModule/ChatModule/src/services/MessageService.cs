@@ -44,8 +44,73 @@ namespace ChatModule.Services
             var participant = await RequireActiveParticipantAsync(conversationId, userId);
             if (participant.TimeoutUntil.HasValue && participant.TimeoutUntil.Value > DateTime.UtcNow)
             {
-                throw new InvalidOperationException("Participant is timed out and cannot send messages.");
+                var remaining = participant.TimeoutUntil.Value - DateTime.UtcNow;
+                if (remaining < TimeSpan.Zero)
+                {
+                    remaining = TimeSpan.Zero;
+                }
+
+                throw new InvalidOperationException($"You are timed out and cannot send messages for {FormatDuration(remaining)}.");
             }
+        }
+
+        public async Task<string?> GetCannotSendReasonAsync(Guid conversationId, Guid userId)
+        {
+            var participant = await _participantRepository.GetAsync(conversationId, userId);
+            if (participant == null)
+            {
+                return "You are not a participant of this conversation.";
+            }
+
+            if (participant.Role == ParticipantRole.Banned)
+            {
+                return "You are banned in this conversation.";
+            }
+
+            if (participant.TimeoutUntil.HasValue && participant.TimeoutUntil.Value > DateTime.UtcNow)
+            {
+                var remaining = participant.TimeoutUntil.Value - DateTime.UtcNow;
+                if (remaining < TimeSpan.Zero)
+                {
+                    remaining = TimeSpan.Zero;
+                }
+
+                return $"You are timed out and cannot send messages for {FormatDuration(remaining)}.";
+            }
+
+            return null;
+        }
+
+        private static string FormatDuration(TimeSpan duration)
+        {
+            var totalSeconds = Math.Max(0, (int)Math.Ceiling(duration.TotalSeconds));
+            var days = totalSeconds / 86400;
+            totalSeconds %= 86400;
+            var hours = totalSeconds / 3600;
+            totalSeconds %= 3600;
+            var minutes = totalSeconds / 60;
+            var seconds = totalSeconds % 60;
+
+            if (days > 0)
+            {
+                return days == 1 ? "1 day" : $"{days} days";
+            }
+
+            if (hours > 0)
+            {
+                return minutes > 0
+                    ? (hours == 1 ? $"1 hour {minutes} minutes" : $"{hours} hours {minutes} minutes")
+                    : (hours == 1 ? "1 hour" : $"{hours} hours");
+            }
+
+            if (minutes > 0)
+            {
+                return seconds > 0
+                    ? (minutes == 1 ? $"1 minute {seconds} seconds" : $"{minutes} minutes {seconds} seconds")
+                    : (minutes == 1 ? "1 minute" : $"{minutes} minutes");
+            }
+
+            return seconds <= 1 ? "1 second" : $"{seconds} seconds";
         }
 
         public async Task<List<Message>> GetMessagesAsync(Guid conversationId, Guid userId, int skip, int take)

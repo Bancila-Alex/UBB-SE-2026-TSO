@@ -13,9 +13,10 @@
 
     <Grid Background="#17153B">
         <Border
-            Width="560"
-            HorizontalAlignment="Center"
+            HorizontalAlignment="Stretch"
             VerticalAlignment="Center"
+            Margin="12"
+            MaxWidth="560"
             Background="#2E236C"
             CornerRadius="10"
             Padding="22"
@@ -156,9 +157,10 @@
         </Border>
 
         <Border
-            Width="560"
-            HorizontalAlignment="Center"
+            HorizontalAlignment="Stretch"
             VerticalAlignment="Center"
+            Margin="12"
+            MaxWidth="560"
             Background="#2E236C"
             CornerRadius="10"
             Padding="22"

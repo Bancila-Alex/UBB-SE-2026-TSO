@@ -267,8 +267,17 @@ namespace ChatModule.src.view_models
                 }
 
                 var isBlocked = await _directMessageService.IsBlockedAsync(conversationId, _currentUserId);
-                IsInputDisabled = isBlocked;
-                InputDisabledReason = isBlocked ? "Messaging is disabled because one of the users is blocked." : null;
+                if (isBlocked)
+                {
+                    IsInputDisabled = true;
+                    InputDisabledReason = "Messaging is disabled because one of the users is blocked.";
+                }
+                else
+                {
+                    var cannotSendReason = await _messageService.GetCannotSendReasonAsync(conversationId, _currentUserId);
+                    IsInputDisabled = !string.IsNullOrWhiteSpace(cannotSendReason);
+                    InputDisabledReason = cannotSendReason;
+                }
 
                 await PopulateReadReceiptMetadataAsync();
                 await UpdateUnreadSeparatorAsync();
@@ -325,6 +334,13 @@ namespace ChatModule.src.view_models
                 await _readReceiptService.MarkLatestAsReadAsync(ConversationId, _currentUserId);
                 await PopulateReadReceiptMetadataAsync();
                 await UpdateUnreadSeparatorAsync();
+
+                var cannotSendReason = await _messageService.GetCannotSendReasonAsync(ConversationId, _currentUserId);
+                if (!string.IsNullOrWhiteSpace(cannotSendReason))
+                {
+                    IsInputDisabled = true;
+                    InputDisabledReason = cannotSendReason;
+                }
             }
             catch (Exception ex)
             {
@@ -642,6 +658,18 @@ namespace ChatModule.src.view_models
             await UpdateUnreadSeparatorAsync();
         }
 
+        public async Task MarkConversationAsReadAsync()
+        {
+            if (ConversationId == Guid.Empty)
+            {
+                return;
+            }
+
+            await _readReceiptService.MarkLatestAsReadAsync(ConversationId, _currentUserId);
+            await PopulateReadReceiptMetadataAsync();
+            await UpdateUnreadSeparatorAsync();
+        }
+
         private async Task PopulateReadReceiptMetadataAsync()
         {
             if (ConversationId == Guid.Empty)
@@ -700,10 +728,18 @@ namespace ChatModule.src.view_models
 
         private async Task UpdateUnreadSeparatorAsync()
         {
+            if (Messages.Count == 0)
+            {
+                FirstUnreadMessage = null;
+                UnreadSeparatorCount = 0;
+                ApplyUnreadSeparatorFlag();
+                return;
+            }
+
             var lastReadMessageId = await _readReceiptService.GetLastReadMessageAsync(ConversationId, _currentUserId);
             if (!lastReadMessageId.HasValue)
             {
-                FirstUnreadMessage = Messages.LastOrDefault();
+                FirstUnreadMessage = Messages.FirstOrDefault();
                 UnreadSeparatorCount = Messages.Count;
                 ApplyUnreadSeparatorFlag();
                 return;
@@ -719,7 +755,7 @@ namespace ChatModule.src.view_models
                 }
             }
 
-            if (lastReadIndex <= 0)
+            if (lastReadIndex < 0)
             {
                 FirstUnreadMessage = null;
                 UnreadSeparatorCount = 0;
@@ -727,8 +763,16 @@ namespace ChatModule.src.view_models
                 return;
             }
 
-            FirstUnreadMessage = Messages[lastReadIndex - 1];
-            UnreadSeparatorCount = lastReadIndex;
+            if (lastReadIndex >= Messages.Count - 1)
+            {
+                FirstUnreadMessage = null;
+                UnreadSeparatorCount = 0;
+                ApplyUnreadSeparatorFlag();
+                return;
+            }
+
+            FirstUnreadMessage = Messages[lastReadIndex + 1];
+            UnreadSeparatorCount = Messages.Count - (lastReadIndex + 1);
             ApplyUnreadSeparatorFlag();
         }
 

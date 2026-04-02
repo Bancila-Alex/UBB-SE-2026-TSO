@@ -11,6 +11,7 @@
         <converters:NullToVisibilityConverter x:Key="NullToVisibility" />
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
         <converters:CountToVisibilityConverter x:Key="CountToVisibility" />
+        <converters:StringToImageSourceConverter x:Key="StringToImageSource" />
     </UserControl.Resources>
 
     <Grid Background="#17153B">
@@ -99,7 +100,7 @@
                                     <Grid Grid.Column="0" Width="36" Height="36" Margin="0,0,10,0">
                                         <Ellipse Fill="#433D8B" />
                                         <Image
-                                            Source="{x:Bind AvatarUrl}"
+                                            Source="{x:Bind AvatarUrl, Converter={StaticResource StringToImageSource}}"
                                             Stretch="UniformToFill"
                                             Visibility="{x:Bind AvatarUrl, Converter={StaticResource NullToVisibility}}" />
                                     </Grid>

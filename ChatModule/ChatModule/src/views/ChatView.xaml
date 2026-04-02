@@ -179,122 +179,128 @@
     </UserControl.Resources>
 
     <Grid Background="#17153B">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
 
-        <!-- Header -->
-        <Border Grid.Row="0" Background="#2E236C" Padding="18,14">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-                <TextBlock
-                    Grid.Column="0"
-                    Text="{x:Bind ViewModel.ConversationTitle, Mode=OneWay}"
-                    Foreground="#C8ACD6"
-                    FontFamily="ms-appx:///Assets/Fonts/SourceSans3-Regular.ttf#Source Sans 3"
-                    FontSize="18"
-                    FontWeight="SemiBold" />
-
-                <Button
-                    Grid.Column="1"
-                    Content="Search"
-                    Command="{x:Bind ViewModel.OpenSearchCommand}"
-                    Background="#433D8B"
-                    Foreground="#C8ACD6"
-                    BorderThickness="0"
-                    CornerRadius="4"
-                    Padding="12,6" />
-            </Grid>
-        </Border>
-
-        <!-- Chat Area -->
-        <Grid Grid.Row="1">
-            <ListView
-                x:Name="MessagesList"
-                ItemsSource="{x:Bind ViewModel.Messages, Mode=OneWay}"
-                ItemTemplate="{StaticResource MessageItemTemplate}"
-                Background="Transparent"
-                Padding="20,52,20,16"
-                SelectionMode="None" />
-
-            <Button
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Top"
-                Command="{x:Bind ViewModel.ScrollToMessageCommand}"
-                CommandParameter="{x:Bind ViewModel.PinnedMessage.Id, Mode=OneWay}"
-                Visibility="{x:Bind ViewModel.PinnedMessage, Mode=OneWay, Converter={StaticResource NullToVisibility}}"
-                Background="#433D8B"
-                Foreground="#C8ACD6"
-                BorderThickness="0"
-                Padding="14,8"
-                HorizontalContentAlignment="Stretch">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock
-                        Text="📌"
-                        FontSize="13"
-                        VerticalAlignment="Center" />
-                    <TextBlock
-                        Text="{x:Bind ViewModel.PinnedMessage.Content, Mode=OneWay}"
-                        Foreground="#C8ACD6"
-                        FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
-                        FontSize="13"
-                        MaxLines="1"
-                        TextTrimming="CharacterEllipsis"
-                        VerticalAlignment="Center" />
-                </StackPanel>
-            </Button>
-        </Grid>
-
-        <!-- Reply Context Strip -->
-        <Border
-            Grid.Row="2"
-            Background="#2E236C"
-            Padding="12,6"
-            Visibility="{x:Bind ViewModel.ReplyingTo, Mode=OneWay, Converter={StaticResource NullToVisibility}}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
-                    <TextBlock
-                        Text="Replying to:"
-                        Foreground="#C8ACD6"
-                        FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
-                        FontSize="11"
-                        Opacity="0.7" />
-                    <TextBlock
-                        Text="{x:Bind ViewModel.ReplyingTo.Content, Mode=OneWay}"
-                        Foreground="#C8ACD6"
-                        FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
-                        FontSize="13"
-                        MaxLines="1"
-                        TextTrimming="CharacterEllipsis" />
-                </StackPanel>
-                <Button
-                    Grid.Column="1"
-                    Content="✕"
-                    Command="{x:Bind ViewModel.CancelReplyCommand}"
-                    Background="Transparent"
-                    Foreground="#C8ACD6"
-                    BorderThickness="0" />
-            </Grid>
-        </Border>
-
-        <!-- Bottom Input Section -->
-        <Grid Grid.Row="3" Background="#2E236C" Padding="14,10">
+        <Grid Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Border Grid.Row="0" Background="#2E236C" Padding="18,14">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock
+                        Grid.Column="0"
+                        Text="{x:Bind ViewModel.ConversationTitle, Mode=OneWay}"
+                        Foreground="#C8ACD6"
+                        FontFamily="ms-appx:///Assets/Fonts/SourceSans3-Regular.ttf#Source Sans 3"
+                        FontSize="18"
+                        FontWeight="SemiBold" />
+
+                    <Button
+                        Grid.Column="1"
+                        Content="Search"
+                        Command="{x:Bind ViewModel.OpenSearchCommand}"
+                        Background="#433D8B"
+                        Foreground="#C8ACD6"
+                        BorderThickness="0"
+                        CornerRadius="4"
+                        Padding="12,6" />
+                </Grid>
+            </Border>
+
+            <!-- Chat Area -->
+            <Grid Grid.Row="1">
+                <ListView
+                    x:Name="MessagesList"
+                    ItemsSource="{x:Bind ViewModel.Messages, Mode=OneWay}"
+                    ItemTemplate="{StaticResource MessageItemTemplate}"
+                    Background="Transparent"
+                    Padding="20,52,20,16"
+                    SelectionMode="None" />
+
+                <Button
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Top"
+                    Command="{x:Bind ViewModel.ScrollToMessageCommand}"
+                    CommandParameter="{x:Bind ViewModel.PinnedMessage.Id, Mode=OneWay}"
+                    Visibility="{x:Bind ViewModel.PinnedMessage, Mode=OneWay, Converter={StaticResource NullToVisibility}}"
+                    Background="#433D8B"
+                    Foreground="#C8ACD6"
+                    BorderThickness="0"
+                    Padding="14,8"
+                    HorizontalContentAlignment="Stretch">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock
+                            Text="📌"
+                            FontSize="13"
+                            VerticalAlignment="Center" />
+                        <TextBlock
+                            Text="{x:Bind ViewModel.PinnedMessage.Content, Mode=OneWay}"
+                            Foreground="#C8ACD6"
+                            FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                            FontSize="13"
+                            MaxLines="1"
+                            TextTrimming="CharacterEllipsis"
+                            VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- Reply Context Strip -->
+            <Border
+                Grid.Row="2"
+                Background="#2E236C"
+                Padding="12,6"
+                Visibility="{x:Bind ViewModel.ReplyingTo, Mode=OneWay, Converter={StaticResource NullToVisibility}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock
+                            Text="Replying to:"
+                            Foreground="#C8ACD6"
+                            FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
+                            FontSize="11"
+                            Opacity="0.7" />
+                        <TextBlock
+                            Text="{x:Bind ViewModel.ReplyingTo.Content, Mode=OneWay}"
+                            Foreground="#C8ACD6"
+                            FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                            FontSize="13"
+                            MaxLines="1"
+                            TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <Button
+                        Grid.Column="1"
+                        Content="✕"
+                        Command="{x:Bind ViewModel.CancelReplyCommand}"
+                        Background="Transparent"
+                        Foreground="#C8ACD6"
+                        BorderThickness="0" />
+                </Grid>
+            </Border>
+
+            <!-- Bottom Input Section -->
+            <Grid Grid.Row="3" Background="#2E236C" Padding="14,10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
             <TextBlock
                 Grid.Row="0"
@@ -385,23 +391,32 @@
             </Grid>
         </Grid>
 
-        <Grid
-            Grid.RowSpan="4"
-            Background="#80000000"
-            Visibility="{x:Bind ViewModel.IsSearchVisible, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-            <Border
-                Width="520"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Stretch"
-                Background="#17153B"
-                BorderBrush="#433D8B"
-                BorderThickness="1,0,0,0">
-                <ContentControl
-                    x:Name="SearchPanelHost"
-                    HorizontalContentAlignment="Stretch"
-                    VerticalContentAlignment="Stretch"
-                    Loaded="OnSearchPanelLoaded" />
-            </Border>
+            <Grid
+                Grid.RowSpan="4"
+                Background="#80000000"
+                Visibility="{x:Bind ViewModel.IsSearchVisible, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                <Border
+                    Width="520"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Stretch"
+                    Background="#17153B"
+                    BorderBrush="#433D8B"
+                    BorderThickness="1,0,0,0">
+                    <ContentControl
+                        x:Name="SearchPanelHost"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch"
+                        Loaded="OnSearchPanelLoaded" />
+                </Border>
+            </Grid>
         </Grid>
+
+        <Border
+            Grid.Column="1"
+            Background="#17153B"
+            BorderBrush="#2E236C"
+            BorderThickness="1,0,0,0">
+            <ContentControl x:Name="SidePanelHost" />
+        </Border>
     </Grid>
 </UserControl>
