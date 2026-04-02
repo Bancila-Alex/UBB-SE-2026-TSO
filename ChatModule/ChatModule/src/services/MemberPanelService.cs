@@ -36,5 +36,19 @@ namespace ChatModule.Services
             return participants.Where(p => p.Role == ParticipantRole.Banned).ToList();
         }
 
+        public async Task<List<User>> SearchUsersToAddAsync(Guid conversationId, string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return new List<User>();
+            }
+
+            var existingParticipants = await _participantRepo.GetAllForConversationAsync(conversationId);
+            var existingUserIds = existingParticipants.Select(participant => participant.UserId).ToHashSet();
+
+            var users = await _userRepo.SearchByUsernameAsync(query);
+            return users.Where(user => !existingUserIds.Contains(user.Id)).ToList();
+        }
+
     }
 }
