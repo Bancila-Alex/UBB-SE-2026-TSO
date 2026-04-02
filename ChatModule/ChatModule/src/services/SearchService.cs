@@ -34,6 +34,14 @@ namespace ChatModule.Services
             return await _messageRepository.SearchInConversationAsync(conversationId, query);
         }
 
+        public async Task<List<User>> SearchUsersAsync(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+                return new List<User>();
+
+            return await _userRepository.SearchByUsernameAsync(query);
+        }
+
         public async Task<List<User>> SearchUsersForAddMemberAsync(Guid conversationId, string query)
         {
             var existingParticipants = await _participantRepository.GetAllForConversationAsync(conversationId);

@@ -150,6 +150,7 @@
                     <Button
                         Content="Add Selected"
                         Command="{x:Bind ViewModel.AddMemberCommand}"
+                        Visibility="{x:Bind ViewModel.SelectedAddMember, Mode=OneWay, Converter={StaticResource NullToVisibility}}"
                         Background="#433D8B"
                         Foreground="#C8ACD6"
                         BorderThickness="0"
@@ -158,6 +159,7 @@
                     <Button
                         Content="View Profile"
                         Command="{x:Bind ViewModel.ViewProfileCommand}"
+                        Visibility="{x:Bind ViewModel.SelectedAddMember, Mode=OneWay, Converter={StaticResource NullToVisibility}}"
                         Background="#433D8B"
                         Foreground="#C8ACD6"
                         BorderThickness="0"
