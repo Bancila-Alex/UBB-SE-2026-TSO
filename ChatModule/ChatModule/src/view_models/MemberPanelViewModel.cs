@@ -44,6 +44,13 @@ namespace ChatModule.src.view_models
             }
         }
 
+        private User? _selectedAddMember;
+        public User? SelectedAddMember
+        {
+            get => _selectedAddMember;
+            set => Set(ref _selectedAddMember, value);
+        }
+
         private bool _isLoading;
         public bool IsLoading
         {
