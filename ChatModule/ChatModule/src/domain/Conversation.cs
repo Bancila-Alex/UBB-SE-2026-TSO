@@ -16,5 +16,13 @@ namespace ChatModule.src.domain
         public Guid CreatedBy { get; set; }
 
         public Guid? PinnedMessageId { get; set; }
+
+        public string LastMessagePreview { get; set; } = string.Empty;
+
+        public DateTime? LastMessageAt { get; set; }
+
+        public int UnreadCount { get; set; }
+
+        public bool HasUnread => UnreadCount > 0;
     }
 }

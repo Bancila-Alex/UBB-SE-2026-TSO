@@ -18,5 +18,9 @@ namespace ChatModule.Models
         public Guid? ParentMessageId { get; set; }
         public string? SenderUsername { get; set; }
         public Dictionary<string, int> ReactionCounts { get; set; } = new();
+        public bool IsMine { get; set; }
+        public int ReadByCount { get; set; }
+        public string? ReadReceiptLabel { get; set; }
+        public bool ShowUnreadSeparator { get; set; }
     }
 }

@@ -10,6 +10,7 @@
     <UserControl.Resources>
         <converters:NullToVisibilityConverter x:Key="NullToVisibility" />
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+        <converters:CountToVisibilityConverter x:Key="CountToVisibility" />
     </UserControl.Resources>
 
     <Grid Background="#17153B">
@@ -19,7 +20,7 @@
         </Grid.RowDefinitions>
 
         <!-- Header (always visible) -->
-        <Border Grid.Row="0" Background="#2E236C" Padding="12,10">
+        <Border Grid.Row="0" Background="#2E236C" Padding="16,14">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -50,7 +51,7 @@
             Grid.Row="1"
             VerticalScrollBarVisibility="Auto"
             Visibility="{x:Bind ViewModel.IsPanelVisible, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-            <StackPanel Spacing="0">
+            <StackPanel Spacing="8" Padding="8,8,8,12">
 
                 <!-- Loading indicator -->
                 <ProgressRing
@@ -86,7 +87,7 @@
                     </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="vm:MemberDisplayItem">
-                            <Border Background="#2E236C" CornerRadius="6" Padding="10,8">
+                            <Border Background="#2E236C" CornerRadius="6" Padding="10,10" Margin="0,0,0,4">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
@@ -130,7 +131,7 @@
                                     <StackPanel
                                         Grid.Column="2"
                                         Orientation="Horizontal"
-                                        Spacing="4"
+                                        Spacing="6"
                                         VerticalAlignment="Center"
                                         Visibility="{Binding ElementName=RootControl, Path=ViewModel.IsAdmin, Converter={StaticResource BoolToVisibility}}">
                                         <Button
@@ -248,7 +249,7 @@
                         </ListView.ItemContainerStyle>
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="vm:MemberDisplayItem">
-                                <Border Background="#2E236C" CornerRadius="6" Padding="10,8">
+                                <Border Background="#2E236C" CornerRadius="6" Padding="10,10" Margin="0,0,0,4">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
@@ -328,7 +329,7 @@
                             Background="#17153B"
                             BorderThickness="0"
                             MaxHeight="160"
-                            Visibility="{x:Bind ViewModel.AddMemberResults.Count, Mode=OneWay, Converter={StaticResource NullToVisibility}}">
+                            Visibility="{x:Bind ViewModel.AddMemberResults.Count, Mode=OneWay, Converter={StaticResource CountToVisibility}}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="models:User">
                                     <Grid Padding="4,4">

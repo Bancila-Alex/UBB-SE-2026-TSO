@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using ChatModule.Models;
 using ChatModule.Repositories;
 using ChatModule.Services;
@@ -32,6 +33,7 @@ namespace ChatModule.src.view_models
         private Message? _editingMessage;
         private int _messageSkip = 0;
         private const int PageSize = 100;
+        private bool _hasMoreMessages = true;
 
         public Guid ConversationId { get; private set; }
 
@@ -121,6 +123,46 @@ namespace ChatModule.src.view_models
 
         public RelayCommand<Tuple<Guid, string>> ReactWithSpecificEmojiCommand { get; }
 
+        public RelayCommand<Guid> ToggleReactionCounterCommand { get; }
+
+        public RelayCommand OpenSearchCommand { get; }
+
+        public ICommand CloseSearchCommand { get; }
+
+        public RelayCommand<Guid> JumpToSearchResultCommand { get; }
+
+        public MessageSearchViewModel MessageSearch { get; }
+
+        private bool _isSearchVisible;
+        public bool IsSearchVisible
+        {
+            get => _isSearchVisible;
+            private set => Set(ref _isSearchVisible, value);
+        }
+
+        private string? _errorMessage;
+        public string? ErrorMessage
+        {
+            get => _errorMessage;
+            private set => Set(ref _errorMessage, value);
+        }
+
+        private Message? _firstUnreadMessage;
+        public Message? FirstUnreadMessage
+        {
+            get => _firstUnreadMessage;
+            private set => Set(ref _firstUnreadMessage, value);
+        }
+
+        private int _unreadSeparatorCount;
+        public int UnreadSeparatorCount
+        {
+            get => _unreadSeparatorCount;
+            private set => Set(ref _unreadSeparatorCount, value);
+        }
+
+        public bool HasUnreadSeparator => FirstUnreadMessage != null && UnreadSeparatorCount > 0;
+
         public ChatViewModel(
             MessageService messageService,
             MessageInteractionService interactionService,
@@ -128,6 +170,7 @@ namespace ChatModule.src.view_models
             MentionService mentionService,
             DirectMessageService directMessageService,
             ConversationRepository conversationRepository,
+            SearchService searchService,
             Guid currentUserId)
         {
             _messageService = messageService;
@@ -137,8 +180,11 @@ namespace ChatModule.src.view_models
             _directMessageService = directMessageService;
             _conversationRepository = conversationRepository;
             _currentUserId = currentUserId;
+            MessageSearch = new MessageSearchViewModel(searchService, currentUserId);
 
             MentionSuggestions.CollectionChanged += HandleMentionSuggestionsChanged;
+            MessageSearch.CloseRequested += () => IsSearchVisible = false;
+            MessageSearch.JumpToMessageRequested += messageId => _ = ScrollToMessageAsync(messageId);
 
             ReactCommand = new RelayCommand<Guid>(OpenEmojiPickerAsync);
             ScrollToMessageCommand = new RelayCommand<Guid>(ScrollToMessageAsync);
@@ -151,6 +197,10 @@ namespace ChatModule.src.view_models
             ReplyToCommand = new RelayCommand<Guid>(ReplyToAsync);
             InsertMentionCommand = new RelayCommand<User>(InsertMentionAsync);
             ReactWithSpecificEmojiCommand = new RelayCommand<Tuple<Guid, string>>(ReactWithSpecificEmojiAsync);
+            ToggleReactionCounterCommand = new RelayCommand<Guid>(ToggleReactionCounterAsync);
+            OpenSearchCommand = new RelayCommand(OpenSearchAsync);
+            CloseSearchCommand = new RelayCommand(CloseSearchAsync);
+            JumpToSearchResultCommand = new RelayCommand<Guid>(JumpToSearchResultAsync);
         }
 
         private void HandleMentionSuggestionsChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -161,6 +211,7 @@ namespace ChatModule.src.view_models
         public async Task LoadAsync(Guid conversationId)
         {
             IsLoading = true;
+            ErrorMessage = null;
             try
             {
                 ConversationId = conversationId;
@@ -170,8 +221,12 @@ namespace ChatModule.src.view_models
                 Messages.Clear();
                 foreach (var message in messages)
                 {
+                    message.IsMine = message.UserId == _currentUserId;
                     Messages.Add(message);
                 }
+
+                _messageSkip = 0;
+                _hasMoreMessages = messages.Count >= PageSize;
 
                 await PopulateReactionCountersAsync();
 
@@ -190,6 +245,13 @@ namespace ChatModule.src.view_models
                 var isBlocked = await _directMessageService.IsBlockedAsync(conversationId, _currentUserId);
                 IsInputDisabled = isBlocked;
                 InputDisabledReason = isBlocked ? "Messaging is disabled because one of the users is blocked." : null;
+
+                await PopulateReadReceiptMetadataAsync();
+                await UpdateUnreadSeparatorAsync();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = ex.Message;
             }
             finally
             {
@@ -199,47 +261,75 @@ namespace ChatModule.src.view_models
 
         private async Task SendAsync()
         {
-            if (ConversationId == Guid.Empty)
+            ErrorMessage = null;
+            try
             {
-                return;
-            }
+                if (ConversationId == Guid.Empty)
+                {
+                    return;
+                }
 
-            if (IsInputDisabled)
+                if (IsInputDisabled)
+                {
+                    return;
+                }
+
+                if (EditingMessage != null)
+                {
+                    await ConfirmEditAsync();
+                    return;
+                }
+
+                var content = MessageInput;
+                var replyToId = ReplyingTo?.Id;
+
+                var message = await _messageService.SendMessageAsync(ConversationId, _currentUserId, content, replyToId);
+                message.IsMine = true;
+                Messages.Insert(0, message);
+                await PopulateReadReceiptMetadataAsync();
+
+                MessageInput = string.Empty;
+                ReplyingTo = null;
+            }
+            catch (Exception ex)
             {
-                return;
+                ErrorMessage = ex.Message;
             }
-
-            if (EditingMessage != null)
-            {
-                await ConfirmEditAsync();
-                return;
-            }
-
-            var content = MessageInput;
-            var replyToId = ReplyingTo?.Id;
-
-            var message = await _messageService.SendMessageAsync(ConversationId, _currentUserId, content, replyToId);
-            Messages.Insert(0, message);
-
-            MessageInput = string.Empty;
-            ReplyingTo = null;
         }
 
         private async Task LoadMoreAsync()
         {
-            if (ConversationId == Guid.Empty)
+            ErrorMessage = null;
+            try
             {
-                return;
-            }
+                if (ConversationId == Guid.Empty)
+                {
+                    return;
+                }
 
-            _messageSkip += PageSize;
-            var older = await _messageService.GetMessagesAsync(ConversationId, _currentUserId, _messageSkip, PageSize);
-            foreach (var message in older)
+                if (!_hasMoreMessages)
+                {
+                    return;
+                }
+
+                _messageSkip += PageSize;
+                var older = await _messageService.GetMessagesAsync(ConversationId, _currentUserId, _messageSkip, PageSize);
+                foreach (var message in older)
+                {
+                    message.IsMine = message.UserId == _currentUserId;
+                    Messages.Add(message);
+                }
+
+                _hasMoreMessages = older.Count >= PageSize;
+
+                await PopulateReactionCountersAsync();
+                await PopulateReadReceiptMetadataAsync();
+                await UpdateUnreadSeparatorAsync();
+            }
+            catch (Exception ex)
             {
-                Messages.Add(message);
+                ErrorMessage = ex.Message;
             }
-
-            await PopulateReactionCountersAsync();
         }
 
         private Task StartEditAsync(Guid messageId)
@@ -258,6 +348,7 @@ namespace ChatModule.src.view_models
 
         private async Task ConfirmEditAsync()
         {
+            ErrorMessage = null;
             if (EditingMessage == null)
             {
                 return;
@@ -279,6 +370,7 @@ namespace ChatModule.src.view_models
 
             MessageInput = string.Empty;
             EditingMessage = null;
+            await PopulateReadReceiptMetadataAsync();
         }
 
         private Task CancelEditAsync()
@@ -290,17 +382,27 @@ namespace ChatModule.src.view_models
 
         private async Task DeleteAsync(Guid messageId)
         {
-            await _messageService.DeleteMessageAsync(messageId, _currentUserId);
-
-            var message = Messages.FirstOrDefault(m => m.Id == messageId);
-            if (message != null)
+            ErrorMessage = null;
+            try
             {
-                message.IsDeleted = true;
-                var index = Messages.IndexOf(message);
-                if (index >= 0)
+                await _messageService.DeleteMessageAsync(messageId, _currentUserId);
+
+                var message = Messages.FirstOrDefault(m => m.Id == messageId);
+                if (message != null)
                 {
-                    Messages[index] = message;
+                    message.IsDeleted = true;
+                    var index = Messages.IndexOf(message);
+                    if (index >= 0)
+                    {
+                        Messages[index] = message;
+                    }
                 }
+
+                await PopulateReadReceiptMetadataAsync();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = ex.Message;
             }
         }
 
@@ -318,23 +420,31 @@ namespace ChatModule.src.view_models
 
         private async Task OpenEmojiPickerAsync(Guid messageId)
         {
-            if (RequestEmojiAsync == null)
+            ErrorMessage = null;
+            try
             {
-                return;
-            }
+                if (RequestEmojiAsync == null)
+                {
+                    return;
+                }
 
-            var emoji = await RequestEmojiAsync();
-            if (emoji == null)
+                var emoji = await RequestEmojiAsync();
+                if (emoji == null)
+                {
+                    return;
+                }
+
+                await _interactionService.ReactToMessageAsync(messageId, _currentUserId, emoji);
+
+                var reactions = await _interactionService.GetReactionsAsync(messageId);
+                ReactionsChanged?.Invoke(messageId, reactions);
+
+                await PopulateReactionCountersAsync();
+            }
+            catch (Exception ex)
             {
-                return;
+                ErrorMessage = ex.Message;
             }
-
-            await _interactionService.ReactToMessageAsync(messageId, _currentUserId, emoji);
-
-            var reactions = await _interactionService.GetReactionsAsync(messageId);
-            ReactionsChanged?.Invoke(messageId, reactions);
-
-            await PopulateReactionCountersAsync();
         }
 
         private Task ScrollToMessageAsync(Guid messageId)
@@ -391,6 +501,7 @@ namespace ChatModule.src.view_models
 
         private async Task ReactWithSpecificEmojiAsync(Tuple<Guid, string> payload)
         {
+            ErrorMessage = null;
             var messageId = payload.Item1;
             var emoji = payload.Item2;
             if (messageId == Guid.Empty || string.IsNullOrWhiteSpace(emoji))
@@ -404,6 +515,72 @@ namespace ChatModule.src.view_models
             ReactionsChanged?.Invoke(messageId, reactions);
 
             await PopulateReactionCountersAsync();
+        }
+
+        private async Task ToggleReactionCounterAsync(Guid messageId)
+        {
+            ErrorMessage = null;
+            try
+            {
+                var message = Messages.FirstOrDefault(m => m.Id == messageId);
+                if (message == null)
+                {
+                    return;
+                }
+
+                if (message.ReactionCounts.Count == 0)
+                {
+                    return;
+                }
+
+                var topReaction = message.ReactionCounts
+                    .OrderByDescending(entry => entry.Value)
+                    .ThenBy(entry => entry.Key, StringComparer.Ordinal)
+                    .First().Key;
+
+                var reactions = await _interactionService.GetReactionsAsync(messageId);
+                var mine = reactions.FirstOrDefault(r => r.UserId == _currentUserId && !r.IsDeleted);
+
+                if (mine != null && string.Equals(mine.Content, topReaction, StringComparison.Ordinal))
+                {
+                    await _interactionService.RemoveReactionAsync(messageId, _currentUserId);
+                }
+                else
+                {
+                    await _interactionService.ReactToMessageAsync(messageId, _currentUserId, topReaction);
+                }
+
+                var updated = await _interactionService.GetReactionsAsync(messageId);
+                ReactionsChanged?.Invoke(messageId, updated);
+                await PopulateReactionCountersAsync();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = ex.Message;
+            }
+        }
+
+        private Task OpenSearchAsync()
+        {
+            if (ConversationId != Guid.Empty)
+            {
+                MessageSearch.Initialise(ConversationId);
+            }
+
+            IsSearchVisible = true;
+            return Task.CompletedTask;
+        }
+
+        private Task CloseSearchAsync()
+        {
+            IsSearchVisible = false;
+            return Task.CompletedTask;
+        }
+
+        private Task JumpToSearchResultAsync(Guid messageId)
+        {
+            IsSearchVisible = false;
+            return ScrollToMessageAsync(messageId);
         }
 
         private Task InsertMentionAsync(User user)
@@ -426,6 +603,94 @@ namespace ChatModule.src.view_models
             }
 
             await _readReceiptService.MarkAsReadAsync(ConversationId, _currentUserId, lastVisibleMessageId);
+            await PopulateReadReceiptMetadataAsync();
+            await UpdateUnreadSeparatorAsync();
+        }
+
+        private async Task PopulateReadReceiptMetadataAsync()
+        {
+            foreach (var message in Messages)
+            {
+                message.IsMine = message.UserId == _currentUserId;
+
+                if (message.MessageType == MessageType.Reaction || message.IsDeleted)
+                {
+                    message.ReadByCount = 0;
+                    message.ReadReceiptLabel = null;
+                    continue;
+                }
+
+                var readByCount = await _readReceiptService.GetReadByCountAsync(ConversationId, message.Id);
+                message.ReadByCount = readByCount;
+
+                if (!message.IsMine)
+                {
+                    message.ReadReceiptLabel = null;
+                    continue;
+                }
+
+                if (readByCount <= 0)
+                {
+                    message.ReadReceiptLabel = null;
+                }
+                else if (readByCount == 1)
+                {
+                    message.ReadReceiptLabel = "Seen";
+                }
+                else
+                {
+                    message.ReadReceiptLabel = $"Read by {readByCount}";
+                }
+            }
+        }
+
+        private async Task UpdateUnreadSeparatorAsync()
+        {
+            var lastReadMessageId = await _readReceiptService.GetLastReadMessageAsync(ConversationId, _currentUserId);
+            if (!lastReadMessageId.HasValue)
+            {
+                FirstUnreadMessage = Messages.LastOrDefault();
+                UnreadSeparatorCount = Messages.Count;
+                ApplyUnreadSeparatorFlag();
+                return;
+            }
+
+            var lastReadIndex = -1;
+            for (var i = 0; i < Messages.Count; i++)
+            {
+                if (Messages[i].Id == lastReadMessageId.Value)
+                {
+                    lastReadIndex = i;
+                    break;
+                }
+            }
+
+            if (lastReadIndex <= 0)
+            {
+                FirstUnreadMessage = null;
+                UnreadSeparatorCount = 0;
+                ApplyUnreadSeparatorFlag();
+                return;
+            }
+
+            FirstUnreadMessage = Messages[lastReadIndex - 1];
+            UnreadSeparatorCount = lastReadIndex;
+            ApplyUnreadSeparatorFlag();
+        }
+
+        private void ApplyUnreadSeparatorFlag()
+        {
+            foreach (var message in Messages)
+            {
+                message.ShowUnreadSeparator = false;
+            }
+
+            if (FirstUnreadMessage != null)
+            {
+                FirstUnreadMessage.ShowUnreadSeparator = true;
+            }
+
+            OnPropertyChanged(nameof(HasUnreadSeparator));
         }
     }
 }

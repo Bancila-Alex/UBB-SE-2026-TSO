@@ -10,16 +10,40 @@
         <converters:NullToVisibilityConverter x:Key="NullToVisibility" />
         <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
         <converters:InverseBooleanConverter x:Key="InverseBoolean" />
+        <converters:CountToVisibilityConverter x:Key="CountToVisibility" />
         <converters:ReactionCountsToDisplayListConverter x:Key="ReactionCountsToDisplayList" />
 
         <DataTemplate x:Key="MessageItemTemplate">
-            <Grid Margin="0,4" ColumnSpacing="10">
+            <Grid Margin="0,6" ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="40" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
                 <Border
+                    Grid.ColumnSpan="2"
+                    Grid.Row="0"
+                    Background="#433D8B"
+                    CornerRadius="6"
+                    Padding="8,4"
+                    Margin="0,0,0,6"
+                    Visibility="{Binding ShowUnreadSeparator, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock
+                        Text="Unread"
+                        Foreground="#C8ACD6"
+                        FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                        FontSize="11"
+                        FontWeight="SemiBold" />
+                </Border>
+
+                <Border
+                    Grid.Row="1"
                     Width="36"
                     Height="36"
                     Background="#433D8B"
@@ -32,6 +56,7 @@
                 </Border>
 
                 <Border
+                    Grid.Row="1"
                     Grid.Column="1"
                     Padding="10,8"
                     Background="#2E236C"
@@ -96,7 +121,7 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Button
-                                        Command="{Binding ElementName=RootControl, Path=ViewModel.ReactCommand}"
+                                        Command="{Binding ElementName=RootControl, Path=ViewModel.ToggleReactionCounterCommand}"
                                         CommandParameter="{Binding DataContext.Id, ElementName=MessageContentRoot}"
                                         Background="#433D8B"
                                         Foreground="#C8ACD6"
@@ -123,6 +148,17 @@
                             Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
                     </StackPanel>
                 </Border>
+
+                <TextBlock
+                    Grid.Column="1"
+                    Grid.Row="2"
+                    Text="{Binding ReadReceiptLabel}"
+                    Foreground="#C8ACD6"
+                    Opacity="0.75"
+                    FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                    FontSize="11"
+                    Margin="6,4,0,0"
+                    Visibility="{Binding ReadByCount, Converter={StaticResource CountToVisibility}}" />
             </Grid>
         </DataTemplate>
     </UserControl.Resources>
@@ -136,22 +172,41 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="#2E236C" Padding="16,12">
-            <TextBlock
-                Text="{x:Bind ViewModel.ConversationTitle, Mode=OneWay}"
-                Foreground="#C8ACD6"
-                FontFamily="ms-appx:///Assets/Fonts/SourceSans3-Regular.ttf#Source Sans 3"
-                FontSize="18"
-                FontWeight="SemiBold" />
+        <Border Grid.Row="0" Background="#2E236C" Padding="18,14">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock
+                    Grid.Column="0"
+                    Text="{x:Bind ViewModel.ConversationTitle, Mode=OneWay}"
+                    Foreground="#C8ACD6"
+                    FontFamily="ms-appx:///Assets/Fonts/SourceSans3-Regular.ttf#Source Sans 3"
+                    FontSize="18"
+                    FontWeight="SemiBold" />
+
+                <Button
+                    Grid.Column="1"
+                    Content="Search"
+                    Command="{x:Bind ViewModel.OpenSearchCommand}"
+                    Background="#433D8B"
+                    Foreground="#C8ACD6"
+                    BorderThickness="0"
+                    CornerRadius="4"
+                    Padding="12,6" />
+            </Grid>
         </Border>
 
         <!-- Chat Area -->
         <Grid Grid.Row="1">
             <ListView
+                x:Name="MessagesList"
                 ItemsSource="{x:Bind ViewModel.Messages, Mode=OneWay}"
                 ItemTemplate="{StaticResource MessageItemTemplate}"
                 Background="Transparent"
-                Padding="8,36,8,8"
+                Padding="12,44,12,10"
                 SelectionMode="None" />
 
             <Button
@@ -163,7 +218,7 @@
                 Background="#433D8B"
                 Foreground="#C8ACD6"
                 BorderThickness="0"
-                Padding="12,6"
+                Padding="14,8"
                 HorizontalContentAlignment="Stretch">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <TextBlock
@@ -236,6 +291,15 @@
                 Margin="2,0,2,6"
                 Visibility="{x:Bind ViewModel.IsInputDisabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
 
+            <TextBlock
+                Grid.Row="0"
+                Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                Foreground="#FF8A8A"
+                FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                FontSize="12"
+                Margin="2,20,2,0"
+                Visibility="{x:Bind ViewModel.ErrorMessage, Mode=OneWay, Converter={StaticResource NullToVisibility}}" />
+
             <ListBox
                 Grid.Row="1"
                 ItemsSource="{x:Bind ViewModel.MentionSuggestions, Mode=OneWay}"
@@ -273,7 +337,7 @@
                 </ListBox.ItemTemplate>
             </ListBox>
 
-            <Grid Grid.Row="2">
+            <Grid Grid.Row="2" ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -300,10 +364,29 @@
                     Background="#433D8B"
                     Foreground="#C8ACD6"
                     FontFamily="ms-appx:///Assets/Fonts/SourceSans3-Regular.ttf#Source Sans 3"
-                    Margin="6,0,0,0"
+                    Margin="8,0,0,0"
                     Padding="16,8"
                     CornerRadius="4" />
             </Grid>
+        </Grid>
+
+        <Grid
+            Grid.RowSpan="4"
+            Background="#80000000"
+            Visibility="{x:Bind ViewModel.IsSearchVisible, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+            <Border
+                Width="520"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Stretch"
+                Background="#17153B"
+                BorderBrush="#433D8B"
+                BorderThickness="1,0,0,0">
+                <ContentControl
+                    x:Name="SearchPanelHost"
+                    HorizontalContentAlignment="Stretch"
+                    VerticalContentAlignment="Stretch"
+                    Loaded="OnSearchPanelLoaded" />
+            </Border>
         </Grid>
     </Grid>
 </UserControl>

@@ -139,6 +139,11 @@ namespace ChatModule.ViewModels
 
         private Task LogoutAsync()
         {
+            if (CurrentUserId != Guid.Empty)
+            {
+                _ = _profileService.UpdateStatusAsync(CurrentUserId, ChatModule.src.domain.Enums.UserStatus.Offline);
+            }
+
             CurrentUserId = Guid.Empty;
             CurrentUsername = string.Empty;
             CurrentPage = null;

@@ -56,7 +56,7 @@ namespace ChatModule
             var searchService = new SearchService(messageRepository, participantRepository, userRepository);
             var messageService = new MessageService(messageRepository, participantRepository, userRepository);
             var messageInteractionService = new MessageInteractionService(messageRepository, participantRepository, userRepository);
-            var readReceiptService = new ReadReceiptService(participantRepository);
+            var readReceiptService = new ReadReceiptService(participantRepository, messageRepository);
             var mentionService = new MentionService(participantRepository, userRepository);
 
             _userRepository = userRepository;
@@ -281,6 +281,7 @@ namespace ChatModule
                 _mentionService,
                 _directMessageService,
                 _conversationRepository,
+                _searchService,
                 ViewModel.CurrentUserId);
 
             await chatViewModel.LoadAsync(conversationId);

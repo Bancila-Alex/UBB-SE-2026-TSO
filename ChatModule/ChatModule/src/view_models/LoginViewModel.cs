@@ -74,9 +74,9 @@ public class LoginViewModel : BaseViewModel
                     ErrorMessage = "Invalid credentials";
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
         {
-                ErrorMessage = "An error occurred during login.";
+                ErrorMessage = ex.Message;
             }
             finally
             {

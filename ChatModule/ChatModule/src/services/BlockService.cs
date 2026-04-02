@@ -20,6 +20,22 @@ namespace ChatModule.Services
 
         public async Task BlockUserAsync(Guid blockerId, Guid targetId)
         {
+            var relation = await _friendRepository.GetAsync(blockerId, targetId);
+            if (relation == null)
+            {
+                await _friendRepository.CreateAsync(new Friend
+                {
+                    Id = Guid.NewGuid(),
+                    UserId1 = blockerId,
+                    UserId2 = targetId,
+                    Status = FriendStatus.Blocked,
+                    IsMatch = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                return;
+            }
+
             await _friendRepository.UpdateStatusAsync(blockerId, targetId, FriendStatus.Blocked);
         }
 
