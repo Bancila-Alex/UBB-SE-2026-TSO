@@ -1,9 +1,10 @@
-using System;
-using System.Threading.Tasks;
 using ChatModule.Models;
 using ChatModule.Services;
+using ChatModule.src.domain.Enums;
 using ChatModule.ViewModels;
+using System;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 
 namespace ChatModule.ViewModels;
 public class ProfileViewModel : BaseViewModel
@@ -44,6 +45,43 @@ public class ProfileViewModel : BaseViewModel
     public RelayCommand UnblockUserCommand { get; }
     public RelayCommand OpenDmCommand { get; }
 
+    private UserStatus _selectedStatus;
+    public UserStatus SelectedStatus
+    {
+        get => _selectedStatus;
+        set
+        {
+            if (Set(ref _selectedStatus, value) && User != null)
+            {
+                _ = UpdateStatusAsync(value);
+            }
+        }
+    }
+
+    private string? _editBio;
+    public string? EditBio
+    {
+        get => _editBio;
+        set => Set(ref _editBio, value);
+    }
+
+    private string? _editAvatarUrl;
+    public string? EditAvatarUrl
+    {
+        get => _editAvatarUrl;
+        set => Set(ref _editAvatarUrl, value);
+    }
+
+    private DateTime? _editBirthday;
+    public DateTime? EditBirthday
+    {
+        get => _editBirthday;
+        set => Set(ref _editBirthday, value);
+    }
+
+    public RelayCommand SaveProfileCommand { get; }
+    public RelayCommand LoadMutualFriendsCommand { get; }
+
     public ProfileViewModel(
         FriendRequestService friendRequestService,
         BlockService blockService,
@@ -61,6 +99,9 @@ public class ProfileViewModel : BaseViewModel
         BlockUserCommand = new RelayCommand(BlockUserAsync);
         UnblockUserCommand = new RelayCommand(UnblockUserAsync);
         OpenDmCommand = new RelayCommand(OpenDmAsync);
+
+        SaveProfileCommand = new RelayCommand(SaveProfileAsync);
+        LoadMutualFriendsCommand = new RelayCommand(LoadMutualFriendsAsync);
     }
 
     public async Task LoadAsync(Guid targetUserId)
@@ -68,10 +109,36 @@ public class ProfileViewModel : BaseViewModel
         User = await _profileService.GetProfileAsync(targetUserId);
         IsOwnProfile = targetUserId == _currentUserId;
 
-        MutualFriends.Clear();
-        if (!IsOwnProfile)
+        if (User != null)
         {
-            var mutuals = await _profileService.GetMutualFriendsAsync(_currentUserId, targetUserId);
+            SelectedStatus = User.Status;
+            EditBio = User.Bio;
+            EditAvatarUrl = User.AvatarUrl;
+            EditBirthday = User.Birthday;
+        }
+
+        await LoadMutualFriendsAsync();
+    }
+
+    private async Task UpdateStatusAsync(UserStatus status)
+    {
+        if (User == null) return;
+        await _profileService.UpdateStatusAsync(User.Id, status);
+    }
+
+    private async Task SaveProfileAsync()
+    {
+        if (User == null) return;
+        await _profileService.UpdateProfileAsync(User.Id, EditBio, EditAvatarUrl, EditBirthday);
+        User = await _profileService.GetProfileAsync(User.Id);
+    }
+
+    private async Task LoadMutualFriendsAsync()
+    {
+        MutualFriends.Clear();
+        if (!IsOwnProfile && User != null)
+        {
+            var mutuals = await _profileService.GetMutualFriendsAsync(_currentUserId, User.Id);
             foreach (var user in mutuals)
                 MutualFriends.Add(user);
         }
