@@ -1,0 +1,164 @@
+<UserControl
+    x:Class="ChatModule.src.views.ConversationListView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="using:ChatModule.src.views.Converters"
+    x:Name="RootControl">
+
+    <UserControl.Resources>
+        <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </UserControl.Resources>
+
+    <Grid Background="#17153B">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="#2E236C" Padding="16,12">
+            <Grid ColumnSpacing="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock
+                    Grid.Column="0"
+                    Text="Conversations"
+                    Foreground="#C8ACD6"
+                    FontFamily="ms-appx:///Assets/Fonts/SourceSans3-Regular.ttf#Source Sans 3"
+                    FontSize="20"
+                    FontWeight="SemiBold"
+                    VerticalAlignment="Center" />
+
+                <StackPanel
+                    Grid.Column="1"
+                    Orientation="Horizontal"
+                    Spacing="8">
+                    <Button
+                        Content="New Group"
+                        Command="{x:Bind ViewModel.NewGroupCommand}"
+                        Background="#433D8B"
+                        Foreground="#C8ACD6"
+                        BorderThickness="0"
+                        CornerRadius="4"
+                        Padding="12,6"
+                        FontFamily="ms-appx:///Assets/Fonts/SourceSans3-Regular.ttf#Source Sans 3" />
+                    <Button
+                        Content="New DM"
+                        Command="{x:Bind ViewModel.NewDmCommand}"
+                        Background="#2E236C"
+                        Foreground="#C8ACD6"
+                        BorderBrush="#433D8B"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="12,6"
+                        FontFamily="ms-appx:///Assets/Fonts/SourceSans3-Regular.ttf#Source Sans 3" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Background="#2E236C" Padding="12,10">
+            <ScrollViewer
+                HorizontalScrollBarVisibility="Auto"
+                HorizontalScrollMode="Auto"
+                VerticalScrollBarVisibility="Disabled"
+                VerticalScrollMode="Disabled">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <StackPanel Spacing="4">
+                        <Button
+                            Content="All"
+                            Command="{x:Bind ViewModel.SwitchTabCommand}"
+                            CommandParameter="All"
+                            Background="Transparent"
+                            Foreground="#C8ACD6"
+                            BorderThickness="0"
+                            Padding="10,4"
+                            FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans" />
+                        <Rectangle
+                            Height="2"
+                            Fill="#C8ACD6"
+                            Visibility="{x:Bind ViewModel.IsAllTabActive, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <Button
+                            Content="Direct Messages"
+                            Command="{x:Bind ViewModel.SwitchTabCommand}"
+                            CommandParameter="Direct Messages"
+                            Background="Transparent"
+                            Foreground="#C8ACD6"
+                            BorderThickness="0"
+                            Padding="10,4"
+                            FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans" />
+                        <Rectangle
+                            Height="2"
+                            Fill="#C8ACD6"
+                            Visibility="{x:Bind ViewModel.IsDirectMessagesTabActive, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <Button
+                            Content="Groups"
+                            Command="{x:Bind ViewModel.SwitchTabCommand}"
+                            CommandParameter="Groups"
+                            Background="Transparent"
+                            Foreground="#C8ACD6"
+                            BorderThickness="0"
+                            Padding="10,4"
+                            FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans" />
+                        <Rectangle
+                            Height="2"
+                            Fill="#C8ACD6"
+                            Visibility="{x:Bind ViewModel.IsGroupsTabActive, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <Button
+                            Content="Favorites"
+                            Command="{x:Bind ViewModel.SwitchTabCommand}"
+                            CommandParameter="Favorites"
+                            Background="Transparent"
+                            Foreground="#C8ACD6"
+                            BorderThickness="0"
+                            Padding="10,4"
+                            FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans" />
+                        <Rectangle
+                            Height="2"
+                            Fill="#C8ACD6"
+                            Visibility="{x:Bind ViewModel.IsFavoritesTabActive, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <Button
+                            Content="Unread"
+                            Command="{x:Bind ViewModel.SwitchTabCommand}"
+                            CommandParameter="Unread"
+                            Background="Transparent"
+                            Foreground="#C8ACD6"
+                            BorderThickness="0"
+                            Padding="10,4"
+                            FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans" />
+                        <Rectangle
+                            Height="2"
+                            Fill="#C8ACD6"
+                            Visibility="{x:Bind ViewModel.IsUnreadTabActive, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <Border Grid.Row="2" Background="#2E236C" Padding="12,10" Margin="0,1,0,0">
+            <TextBox
+                Text="{x:Bind ViewModel.SearchQuery, Mode=TwoWay}"
+                PlaceholderText="Search conversations"
+                Background="#433D8B"
+                Foreground="#C8ACD6"
+                BorderThickness="0"
+                CornerRadius="4"
+                Padding="10,6"
+                FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans" />
+        </Border>
+    </Grid>
+</UserControl>
