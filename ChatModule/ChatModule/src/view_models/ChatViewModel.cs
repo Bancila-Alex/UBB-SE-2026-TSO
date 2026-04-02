@@ -116,6 +116,8 @@ namespace ChatModule.src.view_models
 
         public RelayCommand<User> InsertMentionCommand { get; }
 
+        public RelayCommand<Tuple<Guid, string>> ReactWithSpecificEmojiCommand { get; }
+
         public ChatViewModel(
             MessageService messageService,
             MessageInteractionService interactionService,
@@ -139,6 +141,7 @@ namespace ChatModule.src.view_models
             CancelReplyCommand = new RelayCommand(CancelReplyAsync);
             ReplyToCommand = new RelayCommand<Guid>(ReplyToAsync);
             InsertMentionCommand = new RelayCommand<User>(InsertMentionAsync);
+            ReactWithSpecificEmojiCommand = new RelayCommand<Tuple<Guid, string>>(ReactWithSpecificEmojiAsync);
         }
 
         public async Task LoadAsync(Guid conversationId)
@@ -360,19 +363,33 @@ namespace ChatModule.src.view_models
             {
                 if (message.MessageType == MessageType.Reaction)
                 {
-                    message.HeartReactionCount = 0;
-                    message.ThumbsUpReactionCount = 0;
-                    message.LaughReactionCount = 0;
-                    message.FireReactionCount = 0;
+                    message.ReactionCounts.Clear();
                     continue;
                 }
 
                 var reactions = await _interactionService.GetReactionsAsync(message.Id);
-                message.HeartReactionCount = reactions.Count(r => !r.IsDeleted && string.Equals(r.Content, "❤", StringComparison.Ordinal));
-                message.ThumbsUpReactionCount = reactions.Count(r => !r.IsDeleted && string.Equals(r.Content, "👍", StringComparison.Ordinal));
-                message.LaughReactionCount = reactions.Count(r => !r.IsDeleted && string.Equals(r.Content, "😂", StringComparison.Ordinal));
-                message.FireReactionCount = reactions.Count(r => !r.IsDeleted && string.Equals(r.Content, "🔥", StringComparison.Ordinal));
+                message.ReactionCounts = reactions
+                    .Where(r => !r.IsDeleted && !string.IsNullOrWhiteSpace(r.Content))
+                    .GroupBy(r => r.Content!)
+                    .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
             }
+        }
+
+        private async Task ReactWithSpecificEmojiAsync(Tuple<Guid, string> payload)
+        {
+            var messageId = payload.Item1;
+            var emoji = payload.Item2;
+            if (messageId == Guid.Empty || string.IsNullOrWhiteSpace(emoji))
+            {
+                return;
+            }
+
+            await _interactionService.ReactToMessageAsync(messageId, _currentUserId, emoji);
+
+            var reactions = await _interactionService.GetReactionsAsync(messageId);
+            ReactionsChanged?.Invoke(messageId, reactions);
+
+            await PopulateReactionCountersAsync();
         }
 
         private Task InsertMentionAsync(User user)

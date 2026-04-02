@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using ChatModule.src.domain.Enums;
 
 namespace ChatModule.Models
@@ -16,9 +17,6 @@ namespace ChatModule.Models
         public MessageType MessageType { get; set; }
         public Guid? ParentMessageId { get; set; }
         public string? SenderUsername { get; set; }
-        public int HeartReactionCount { get; set; }
-        public int ThumbsUpReactionCount { get; set; }
-        public int LaughReactionCount { get; set; }
-        public int FireReactionCount { get; set; }
+        public Dictionary<string, int> ReactionCounts { get; set; } = new();
     }
 }

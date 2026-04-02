@@ -10,10 +10,7 @@
         <converters:NullToVisibilityConverter x:Key="NullToVisibility" />
         <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
         <converters:InverseBooleanConverter x:Key="InverseBoolean" />
-        <x:String x:Key="HeartEmoji">❤</x:String>
-        <x:String x:Key="ThumbsUpEmoji">👍</x:String>
-        <x:String x:Key="LaughEmoji">😂</x:String>
-        <x:String x:Key="FireEmoji">🔥</x:String>
+        <converters:ReactionCountsToDisplayListConverter x:Key="ReactionCountsToDisplayList" />
 
         <DataTemplate x:Key="MessageItemTemplate">
             <Grid Margin="0,4" ColumnSpacing="10">
@@ -39,7 +36,7 @@
                     Padding="10,8"
                     Background="#2E236C"
                     CornerRadius="10">
-                    <StackPanel Spacing="4">
+                    <StackPanel x:Name="MessageContentRoot" Spacing="4">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
@@ -88,80 +85,42 @@
                             Opacity="0.8"
                             Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}}" />
 
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <Button
-                                Command="{Binding ElementName=RootControl, Path=ViewModel.ReactCommand}"
-                                CommandParameter="{Binding Id}"
-                                Background="#433D8B"
-                                Foreground="#C8ACD6"
-                                BorderThickness="0"
-                                CornerRadius="10"
-                                Padding="8,3"
-                                MinWidth="52">
-                                <StackPanel Orientation="Horizontal" Spacing="5">
-                                    <TextBlock Text="{StaticResource HeartEmoji}" FontSize="12" />
-                                    <TextBlock
-                                        Text="{Binding HeartReactionCount}"
-                                        FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
-                                        FontSize="11"
-                                        Foreground="#C8ACD6" />
-                                </StackPanel>
-                            </Button>
-                            <Button
-                                Command="{Binding ElementName=RootControl, Path=ViewModel.ReactCommand}"
-                                CommandParameter="{Binding Id}"
-                                Background="#433D8B"
-                                Foreground="#C8ACD6"
-                                BorderThickness="0"
-                                CornerRadius="10"
-                                Padding="8,3"
-                                MinWidth="52">
-                                <StackPanel Orientation="Horizontal" Spacing="5">
-                                    <TextBlock Text="{StaticResource ThumbsUpEmoji}" FontSize="12" />
-                                    <TextBlock
-                                        Text="{Binding ThumbsUpReactionCount}"
-                                        FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
-                                        FontSize="11"
-                                        Foreground="#C8ACD6" />
-                                </StackPanel>
-                            </Button>
-                            <Button
-                                Command="{Binding ElementName=RootControl, Path=ViewModel.ReactCommand}"
-                                CommandParameter="{Binding Id}"
-                                Background="#433D8B"
-                                Foreground="#C8ACD6"
-                                BorderThickness="0"
-                                CornerRadius="10"
-                                Padding="8,3"
-                                MinWidth="52">
-                                <StackPanel Orientation="Horizontal" Spacing="5">
-                                    <TextBlock Text="{StaticResource LaughEmoji}" FontSize="12" />
-                                    <TextBlock
-                                        Text="{Binding LaughReactionCount}"
-                                        FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
-                                        FontSize="11"
-                                        Foreground="#C8ACD6" />
-                                </StackPanel>
-                            </Button>
-                            <Button
-                                Command="{Binding ElementName=RootControl, Path=ViewModel.ReactCommand}"
-                                CommandParameter="{Binding Id}"
-                                Background="#433D8B"
-                                Foreground="#C8ACD6"
-                                BorderThickness="0"
-                                CornerRadius="10"
-                                Padding="8,3"
-                                MinWidth="52">
-                                <StackPanel Orientation="Horizontal" Spacing="5">
-                                    <TextBlock Text="{StaticResource FireEmoji}" FontSize="12" />
-                                    <TextBlock
-                                        Text="{Binding FireReactionCount}"
-                                        FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
-                                        FontSize="11"
-                                        Foreground="#C8ACD6" />
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
+                        <ItemsControl
+                            ItemsSource="{Binding ReactionCounts, Converter={StaticResource ReactionCountsToDisplayList}}"
+                            Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="6" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button
+                                        Command="{Binding ElementName=RootControl, Path=ViewModel.ReactCommand}"
+                                        CommandParameter="{Binding DataContext.Id, ElementName=MessageContentRoot}"
+                                        Background="#433D8B"
+                                        Foreground="#C8ACD6"
+                                        BorderThickness="0"
+                                        CornerRadius="10"
+                                        Padding="8,3"
+                                        MinWidth="52"
+                                        Content="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Button
+                            Content="+ React"
+                            Command="{Binding ElementName=RootControl, Path=ViewModel.ReactCommand}"
+                            CommandParameter="{Binding Id}"
+                            Background="#2E236C"
+                            Foreground="#C8ACD6"
+                            BorderBrush="#433D8B"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Padding="8,3"
+                            HorizontalAlignment="Left"
+                            Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
                     </StackPanel>
                 </Border>
             </Grid>
