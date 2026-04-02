@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using ChatModule.Models;
 using ChatModule.Repositories;
 using ChatModule.Services;
+using ChatModule.src.domain.Enums;
 using ChatModule.ViewModels;
 
 namespace ChatModule.src.view_models
@@ -155,6 +156,8 @@ namespace ChatModule.src.view_models
                     Messages.Add(message);
                 }
 
+                await PopulateReactionCountersAsync();
+
                 var conversation = await _conversationRepository.GetByIdAsync(conversationId);
                 ConversationTitle = conversation?.Title ?? string.Empty;
 
@@ -218,6 +221,8 @@ namespace ChatModule.src.view_models
             {
                 Messages.Add(message);
             }
+
+            await PopulateReactionCountersAsync();
         }
 
         private Task StartEditAsync(Guid messageId)
@@ -311,6 +316,8 @@ namespace ChatModule.src.view_models
 
             var reactions = await _interactionService.GetReactionsAsync(messageId);
             ReactionsChanged?.Invoke(messageId, reactions);
+
+            await PopulateReactionCountersAsync();
         }
 
         private Task ScrollToMessageAsync(Guid messageId)
@@ -344,6 +351,27 @@ namespace ChatModule.src.view_models
             foreach (var user in candidates)
             {
                 MentionSuggestions.Add(user);
+            }
+        }
+
+        private async Task PopulateReactionCountersAsync()
+        {
+            foreach (var message in Messages)
+            {
+                if (message.MessageType == MessageType.Reaction)
+                {
+                    message.HeartReactionCount = 0;
+                    message.ThumbsUpReactionCount = 0;
+                    message.LaughReactionCount = 0;
+                    message.FireReactionCount = 0;
+                    continue;
+                }
+
+                var reactions = await _interactionService.GetReactionsAsync(message.Id);
+                message.HeartReactionCount = reactions.Count(r => !r.IsDeleted && string.Equals(r.Content, "❤", StringComparison.Ordinal));
+                message.ThumbsUpReactionCount = reactions.Count(r => !r.IsDeleted && string.Equals(r.Content, "👍", StringComparison.Ordinal));
+                message.LaughReactionCount = reactions.Count(r => !r.IsDeleted && string.Equals(r.Content, "😂", StringComparison.Ordinal));
+                message.FireReactionCount = reactions.Count(r => !r.IsDeleted && string.Equals(r.Content, "🔥", StringComparison.Ordinal));
             }
         }
 
