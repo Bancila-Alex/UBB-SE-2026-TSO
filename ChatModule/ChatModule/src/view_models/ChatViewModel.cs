@@ -16,14 +16,13 @@ namespace ChatModule.src.view_models
 
         public ObservableCollection<Message> Messages { get; } = new();
 
-        // View wires this up to show an emoji picker dialog and return the chosen emoji,
-        // or null if the user cancelled.
+
         public Func<Task<string?>>? RequestEmojiAsync { get; set; }
 
-        // Raised after reactions are updated; passes the message ID and its current reactions.
+
         public event Action<Guid, List<Message>>? ReactionsChanged;
 
-        // Raised to tell the View to scroll to a specific message.
+
         public event Action<Guid>? ScrollToMessageRequested;
 
         public RelayCommand<Guid> ReactCommand           { get; }
