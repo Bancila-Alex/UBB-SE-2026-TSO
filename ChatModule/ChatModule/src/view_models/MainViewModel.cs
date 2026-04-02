@@ -11,6 +11,7 @@ namespace ChatModule.ViewModels
         private readonly FriendRequestService _friendRequestService;
         private readonly BlockService _blockService;
         private readonly DirectMessageService _directMessageService;
+        private readonly ProfileService _profileService;
 
         private Guid _currentUserId;
         public Guid CurrentUserId
@@ -44,11 +45,13 @@ namespace ChatModule.ViewModels
             ConversationListService conversationListService,
             FriendRequestService friendRequestService,
             BlockService blockService,
+            ProfileService profileService,
             DirectMessageService directMessageService)
         {
             _conversationListService = conversationListService ?? throw new ArgumentNullException(nameof(conversationListService));
             _friendRequestService = friendRequestService ?? throw new ArgumentNullException(nameof(friendRequestService));
             _blockService = blockService ?? throw new ArgumentNullException(nameof(blockService));
+            _profileService = profileService ?? throw new ArgumentNullException(nameof(profileService));
             _directMessageService = directMessageService ?? throw new ArgumentNullException(nameof(directMessageService));
 
             GoToConversationsCommand = new RelayCommand(GoToConversationsAsync);
@@ -79,7 +82,7 @@ namespace ChatModule.ViewModels
 
         private Task GoToProfileAsync()
         {
-            CurrentPage = new ProfileViewModel(_friendRequestService, _blockService, _directMessageService, CurrentUserId);
+            CurrentPage = new ProfileViewModel(_friendRequestService, _blockService, _directMessageService, _profileService, CurrentUserId);
             return Task.CompletedTask;
         }
 
