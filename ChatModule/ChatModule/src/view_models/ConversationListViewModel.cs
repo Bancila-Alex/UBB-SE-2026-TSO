@@ -1,16 +1,14 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using System.Windows.Input;
 using ChatModule.Services;
 using ChatModule.src.domain;
-using ChatModule.ViewModels;
 
 namespace ChatModule.ViewModels
 {
     public class ConversationListViewModel : BaseViewModel
     {
-        private readonly ConversationListService _convListService;
+        private readonly ConversationListService _conversationListService;
         private readonly Guid _currentUserId;
 
         public ObservableCollection<Conversation> Conversations { get; } = new();
@@ -47,14 +45,14 @@ namespace ChatModule.ViewModels
             set => Set(ref _isLoading, value);
         }
 
-        public ICommand             LoadCommand      { get; }
+        public RelayCommand         LoadCommand      { get; }
         public RelayCommand<string> SwitchTabCommand { get; }
 
-        public ConversationListViewModel(ConversationListService convListService, Guid currentUserId)
+        public ConversationListViewModel(ConversationListService conversationListService, Guid currentUserId)
         {
-            _convListService = convListService;
-            _currentUserId   = currentUserId;
-            LoadCommand      = new RelayCommand(LoadTabAsync);
+            _conversationListService = conversationListService ?? throw new ArgumentNullException(nameof(conversationListService));
+            _currentUserId = currentUserId;
+            LoadCommand = new RelayCommand(LoadTabAsync);
             SwitchTabCommand = new RelayCommand<string>(SwitchTabAsync);
         }
 
@@ -63,13 +61,14 @@ namespace ChatModule.ViewModels
             IsLoading = true;
             try
             {
-                var results = _activeTab switch
+                var results = ActiveTab switch
                 {
-                    "DMs"        => await _convListService.GetDmsAsync(_currentUserId),
-                    "Groups"     => await _convListService.GetGroupsAsync(_currentUserId),
-                    "Unread"     => await _convListService.GetUnreadAsync(_currentUserId),
-                    "Favourites" => await _convListService.GetFavouritesAsync(_currentUserId),
-                    _            => await _convListService.GetAllAsync(_currentUserId),
+                    "All" => await _conversationListService.GetAllAsync(_currentUserId),
+                    "Direct Messages" => await _conversationListService.GetDmsAsync(_currentUserId),
+                    "Groups" => await _conversationListService.GetGroupsAsync(_currentUserId),
+                    "Favorites" => await _conversationListService.GetFavouritesAsync(_currentUserId),
+                    "Unread" => await _conversationListService.GetUnreadAsync(_currentUserId),
+                    _ => await _conversationListService.GetAllAsync(_currentUserId),
                 };
 
                 Conversations.Clear();
@@ -93,7 +92,7 @@ namespace ChatModule.ViewModels
             IsLoading = true;
             try
             {
-                var results = await _convListService.SearchAsync(_currentUserId, _searchQuery);
+                var results = await _conversationListService.SearchAsync(_currentUserId, _searchQuery);
                 Conversations.Clear();
                 foreach (var c in results)
                     Conversations.Add(c);
