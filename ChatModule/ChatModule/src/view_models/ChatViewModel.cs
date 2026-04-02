@@ -27,6 +27,9 @@ namespace ChatModule.src.view_models
         private bool _isLoading;
         private string _messageInput = string.Empty;
         private Message? _replyingTo;
+        private Message? _editingMessage;
+        private int _messageSkip = 0;
+        private const int PageSize = 100;
 
         public Guid ConversationId { get; private set; }
 
@@ -74,6 +77,12 @@ namespace ChatModule.src.view_models
             private set => Set(ref _replyingTo, value);
         }
 
+        public Message? EditingMessage
+        {
+            get => _editingMessage;
+            private set => Set(ref _editingMessage, value);
+        }
+
         public Func<Task<string?>>? RequestEmojiAsync { get; set; }
 
         public event Action<Guid, List<Message>>? ReactionsChanged;
@@ -87,6 +96,14 @@ namespace ChatModule.src.view_models
         public RelayCommand SendCommand { get; }
 
         public RelayCommand CancelReplyCommand { get; }
+
+        public RelayCommand LoadMoreCommand { get; }
+
+        public RelayCommand<Guid> EditMessageCommand { get; }
+
+        public RelayCommand<Guid> DeleteMessageCommand { get; }
+
+        public RelayCommand CancelEditCommand { get; }
 
         public RelayCommand<Guid> ReplyToCommand { get; }
 
@@ -112,6 +129,10 @@ namespace ChatModule.src.view_models
             SendCommand = new RelayCommand(SendAsync);
             CancelReplyCommand = new RelayCommand(CancelReplyAsync);
             ReplyToCommand = new RelayCommand<Guid>(ReplyToAsync);
+            LoadMoreCommand = new RelayCommand(LoadMoreAsync);
+            EditMessageCommand = new RelayCommand<Guid>(StartEditAsync);
+            DeleteMessageCommand = new RelayCommand<Guid>(DeleteAsync);
+            CancelEditCommand = new RelayCommand(CancelEditAsync);
         }
 
         public async Task LoadAsync(Guid conversationId)
@@ -163,6 +184,12 @@ namespace ChatModule.src.view_models
                 return;
             }
 
+            if (EditingMessage != null)
+            {
+                await ConfirmEditAsync();
+                return;
+            }
+
             var content = MessageInput;
             var replyToId = ReplyingTo?.Id;
 
@@ -171,6 +198,83 @@ namespace ChatModule.src.view_models
 
             MessageInput = string.Empty;
             ReplyingTo = null;
+        }
+
+        private async Task LoadMoreAsync()
+        {
+            if (ConversationId == Guid.Empty)
+            {
+                return;
+            }
+
+            _messageSkip += PageSize;
+            var older = await _messageService.GetMessagesAsync(ConversationId, _currentUserId, _messageSkip, PageSize);
+            foreach (var message in older)
+            {
+                Messages.Add(message);
+            }
+        }
+
+        private Task StartEditAsync(Guid messageId)
+        {
+            var message = Messages.FirstOrDefault(m => m.Id == messageId);
+            if (message == null)
+            {
+                return Task.CompletedTask;
+            }
+
+            EditingMessage = message;
+            MessageInput = message.Content ?? string.Empty;
+            ReplyingTo = null;
+            return Task.CompletedTask;
+        }
+
+        private async Task ConfirmEditAsync()
+        {
+            if (EditingMessage == null)
+            {
+                return;
+            }
+
+            var messageId = EditingMessage.Id;
+            var newContent = MessageInput;
+
+            await _messageService.EditMessageAsync(messageId, _currentUserId, newContent);
+
+            var index = Messages.IndexOf(EditingMessage);
+            if (index >= 0)
+            {
+                var updated = Messages[index];
+                updated.Content = newContent;
+                updated.IsEdited = true;
+                Messages[index] = updated;
+            }
+
+            MessageInput = string.Empty;
+            EditingMessage = null;
+        }
+
+        private Task CancelEditAsync()
+        {
+            EditingMessage = null;
+            MessageInput = string.Empty;
+            return Task.CompletedTask;
+        }
+
+        private async Task DeleteAsync(Guid messageId)
+        {
+            await _messageService.DeleteMessageAsync(messageId, _currentUserId);
+
+            var message = Messages.FirstOrDefault(m => m.Id == messageId);
+            if (message != null)
+            {
+                message.IsDeleted = true;
+                var index = Messages.IndexOf(message);
+                if (index >= 0)
+                {
+                    Messages[index] = message;
+                }
+            }
         }
 
         private Task CancelReplyAsync()
