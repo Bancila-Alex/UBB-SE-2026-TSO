@@ -32,5 +32,7 @@ namespace ChatModule.Models
         public string? ReplyPreviewContent { get; set; }
         public bool CanEdit { get; set; }
         public bool CanDelete { get; set; }
+        public bool CanPin { get; set; }
+        public DateTime? PinExpiresAt { get; set; }
     }
 }

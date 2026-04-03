@@ -22,7 +22,7 @@ namespace ChatModule.Repositories
             await connection.OpenAsync();
 
             const string sql = @"
-SELECT TOP 1 Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId
+SELECT TOP 1 Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId, PinExpiresAt
 FROM Messages
 WHERE Id = @Id;";
 
@@ -46,7 +46,7 @@ WHERE Id = @Id;";
             await connection.OpenAsync();
 
             const string sql = @"
-SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId
+SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId, PinExpiresAt
 FROM Messages
 WHERE ConversationId = @ConversationId
 ORDER BY CreatedAt;";
@@ -71,7 +71,7 @@ ORDER BY CreatedAt;";
             await connection.OpenAsync();
 
             const string sql = @"
-SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId
+SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId, PinExpiresAt
 FROM Messages
 WHERE ConversationId = @ConversationId
   AND MessageType <> @ReactionType
@@ -135,6 +135,23 @@ FETCH NEXT @Take ROWS ONLY;";
             await command.ExecuteNonQueryAsync();
         }
 
+        public async Task SetPinExpiresAtAsync(Guid id, DateTime? expiresAt)
+        {
+            await using var connection = new SqlConnection(_db.ConnectionString);
+            await connection.OpenAsync();
+
+            const string sql = @"
+            UPDATE Messages
+            SET PinExpiresAt = @ExpiresAt
+            WHERE Id = @Id;";
+
+            await using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@ExpiresAt", (object?)expiresAt ?? DBNull.Value);
+            command.Parameters.AddWithValue("@Id", id);
+
+            await command.ExecuteNonQueryAsync();
+        }
+
         public async Task<List<Message>> GetReactionsForMessageAsync(Guid parentMessageId)
         {
             var result = new List<Message>();
@@ -143,7 +160,7 @@ FETCH NEXT @Take ROWS ONLY;";
             await connection.OpenAsync();
 
             const string sql = @"
-            SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId
+            SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId, PinExpiresAt
             FROM Messages
             WHERE MessageType = @ReactionType AND ParentMessageId = @ParentId;";
 
@@ -168,7 +185,7 @@ FETCH NEXT @Take ROWS ONLY;";
             await connection.OpenAsync();
 
             const string sql = @"
-SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId
+SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId, PinExpiresAt
 FROM Messages
 WHERE ConversationId = @ConversationId AND Content LIKE @Query
 ORDER BY CreatedAt;";
@@ -194,7 +211,7 @@ ORDER BY CreatedAt;";
             await connection.OpenAsync();
 
             const string sql = @"
-            SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId
+            SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId, PinExpiresAt
             FROM Messages
             WHERE ConversationId = @ConversationId AND MessageType = @SystemType;";
 
@@ -217,7 +234,7 @@ ORDER BY CreatedAt;";
             await connection.OpenAsync();
 
             const string sql = @"
-SELECT TOP 1 Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId
+SELECT TOP 1 Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId, PinExpiresAt
 FROM Messages
 WHERE ConversationId = @ConversationId
   AND MessageType <> @ReactionType
@@ -440,6 +457,7 @@ ORDER BY Participant.UserId;";
             var isDeletedOrdinal = reader.GetOrdinal("IsDeleted");
             var messageTypeOrdinal = reader.GetOrdinal("MessageType");
             var parentMessageIdOrdinal = reader.GetOrdinal("ParentMessageId");
+            var pinExpiresAtOrdinal = reader.GetOrdinal("PinExpiresAt");
 
             return new Message
             {
@@ -452,7 +470,8 @@ ORDER BY Participant.UserId;";
                 IsEdited = reader.GetBoolean(isEditedOrdinal),
                 IsDeleted = reader.GetBoolean(isDeletedOrdinal),
                 MessageType = (MessageType)reader.GetByte(messageTypeOrdinal),
-                ParentMessageId = reader.IsDBNull(parentMessageIdOrdinal) ? null : reader.GetGuid(parentMessageIdOrdinal)
+                ParentMessageId = reader.IsDBNull(parentMessageIdOrdinal) ? null : reader.GetGuid(parentMessageIdOrdinal),
+                PinExpiresAt = reader.IsDBNull(pinExpiresAtOrdinal) ? null : reader.GetDateTime(pinExpiresAtOrdinal)
             };
         }
     }

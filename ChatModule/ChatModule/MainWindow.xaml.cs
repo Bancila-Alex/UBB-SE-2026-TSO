@@ -57,7 +57,7 @@ namespace ChatModule
             var friendListService = new FriendListService(friendRepository, userRepository);
             var blockService = new BlockService(friendRepository, userRepository);
             var profileService = new ProfileService(userRepository, friendRepository);
-            var directMessageService = new DirectMessageService(conversationRepository, participantRepository, friendRepository, userRepository);
+            var directMessageService = new DirectMessageService(conversationRepository, participantRepository, friendRepository, userRepository, messageRepository);
             var groupService = new GroupService(conversationRepository, participantRepository, messageRepository, userRepository);
             var searchService = new SearchService(messageRepository, participantRepository, userRepository);
             var messageService = new MessageService(messageRepository, participantRepository, userRepository, conversationRepository);

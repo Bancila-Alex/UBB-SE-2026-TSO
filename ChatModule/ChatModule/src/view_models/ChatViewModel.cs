@@ -55,8 +55,17 @@ namespace ChatModule.src.view_models
         public Message? PinnedMessage
         {
             get => _pinnedMessage;
-            private set => Set(ref _pinnedMessage, value);
+            private set
+            {
+                if (Set(ref _pinnedMessage, value))
+                    OnPropertyChanged(nameof(PinnedMessageExpiryLabel));
+            }
         }
+
+        public string? PinnedMessageExpiryLabel =>
+            _pinnedMessage?.PinExpiresAt.HasValue == true
+                ? $"Expires {_pinnedMessage.PinExpiresAt.Value.ToLocalTime():g}"
+                : null;
 
         private bool _isConversationGroup;
         public bool IsConversationGroup
@@ -116,6 +125,7 @@ namespace ChatModule.src.view_models
         }
 
         public Func<Task<string?>>? RequestEmojiAsync { get; set; }
+        public Func<Task<DateTime?>>? RequestPinExpiryAsync { get; set; }
 
         public event Action<Guid, List<Message>>? ReactionsChanged;
 
@@ -156,6 +166,8 @@ namespace ChatModule.src.view_models
 
         public RelayCommand<Guid> JumpToSearchResultCommand { get; }
         public RelayCommand<Guid> ShowReadReceiptDetailsCommand { get; }
+        public RelayCommand<Guid> PinMessageCommand { get; }
+        public RelayCommand UnpinMessageCommand { get; }
 
         public MessageSearchViewModel MessageSearch { get; }
 
@@ -228,6 +240,8 @@ namespace ChatModule.src.view_models
             CloseSearchCommand = new RelayCommand(CloseSearchAsync);
             JumpToSearchResultCommand = new RelayCommand<Guid>(JumpToSearchResultAsync);
             ShowReadReceiptDetailsCommand = new RelayCommand<Guid>(ShowReadReceiptDetailsAsync);
+            PinMessageCommand = new RelayCommand<Guid>(PinAsync);
+            UnpinMessageCommand = new RelayCommand(UnpinAsync);
         }
 
         private void HandleMentionSuggestionsChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -281,7 +295,16 @@ namespace ChatModule.src.view_models
 
                 if (conversation?.PinnedMessageId != null)
                 {
-                    PinnedMessage = messages.FirstOrDefault(m => m.Id == conversation.PinnedMessageId.Value);
+                    var pinned = messages.FirstOrDefault(m => m.Id == conversation.PinnedMessageId.Value);
+                    if (pinned != null && pinned.PinExpiresAt.HasValue && pinned.PinExpiresAt.Value <= DateTime.UtcNow)
+                    {
+                        await _directMessageService.ClearExpiredPinAsync(conversationId, pinned.Id);
+                        PinnedMessage = null;
+                    }
+                    else
+                    {
+                        PinnedMessage = pinned;
+                    }
                 }
                 else
                 {
@@ -984,6 +1007,59 @@ namespace ChatModule.src.view_models
             OnPropertyChanged(nameof(HasUnreadSeparator));
         }
 
+        private async Task PinAsync(Guid messageId)
+        {
+            ErrorMessage = null;
+            try
+            {
+                if (RequestPinExpiryAsync == null)
+                    return;
+
+                var expiresAt = await RequestPinExpiryAsync();
+                if (!expiresAt.HasValue)
+                    return;
+
+                var (_, notice) = await _directMessageService.PinMessageAsync(ConversationId, _currentUserId, messageId, expiresAt.Value);
+
+                var msg = Messages.FirstOrDefault(m => m.Id == messageId);
+                if (msg != null)
+                {
+                    msg.PinExpiresAt = expiresAt.Value;
+                    var idx = Messages.IndexOf(msg);
+                    if (idx >= 0)
+                        Messages[idx] = msg;
+                }
+
+                PinnedMessage = msg;
+
+                PrepareMessageForDisplay(notice);
+                ApplyMessageActions(notice);
+                Messages.Add(notice);
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = ex.Message;
+            }
+        }
+
+        private async Task UnpinAsync()
+        {
+            ErrorMessage = null;
+            try
+            {
+                var notice = await _directMessageService.UnpinMessageAsync(ConversationId, _currentUserId);
+                PinnedMessage = null;
+
+                PrepareMessageForDisplay(notice);
+                ApplyMessageActions(notice);
+                Messages.Add(notice);
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = ex.Message;
+            }
+        }
+
         private static void PrepareMessageForDisplay(Message message)
         {
             if (string.IsNullOrWhiteSpace(message.Content))
@@ -1024,9 +1100,14 @@ namespace ChatModule.src.view_models
             var mine = message.UserId.HasValue && message.UserId.Value == _currentUserId;
             var editableType = message.MessageType == MessageType.Text;
             var notDeleted = !message.IsDeleted;
+            var pinnable = !IsConversationGroup
+                           && message.MessageType != MessageType.System
+                           && message.MessageType != MessageType.Reaction
+                           && notDeleted;
 
             message.CanDelete = mine && notDeleted;
             message.CanEdit = mine && notDeleted && editableType;
+            message.CanPin = pinnable;
         }
     }
 }

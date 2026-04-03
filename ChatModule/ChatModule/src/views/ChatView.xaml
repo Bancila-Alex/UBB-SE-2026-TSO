@@ -225,6 +225,19 @@
                                 Padding="8,3"
                                 HorizontalAlignment="Left"
                                 Visibility="{Binding CanDelete, Converter={StaticResource BoolToVisibility}}" />
+
+                            <Button
+                                Content="Pin"
+                                Command="{Binding ElementName=RootControl, Path=ViewModel.PinMessageCommand}"
+                                CommandParameter="{Binding Id}"
+                                Background="Transparent"
+                                Foreground="#C8ACD6"
+                                BorderBrush="#433D8B"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="8,3"
+                                HorizontalAlignment="Left"
+                                Visibility="{Binding CanPin, Converter={StaticResource BoolToVisibility}}" />
                         </StackPanel>
 
                         <Button
@@ -349,32 +362,63 @@
                     Padding="20,52,20,16"
                     SelectionMode="None" />
 
-                <Button
+                <Grid
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Top"
-                    Command="{x:Bind ViewModel.ScrollToMessageCommand}"
-                    CommandParameter="{x:Bind ViewModel.PinnedMessage.Id, Mode=OneWay}"
-                    Visibility="{x:Bind ViewModel.PinnedMessage, Mode=OneWay, Converter={StaticResource NullToVisibility}}"
                     Background="#433D8B"
-                    Foreground="#C8ACD6"
-                    BorderThickness="0"
-                    Padding="14,8"
-                    HorizontalContentAlignment="Stretch">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock
-                            Text="📌"
-                            FontSize="13"
-                            VerticalAlignment="Center" />
-                        <TextBlock
-                            Text="{x:Bind ViewModel.PinnedMessage.Content, Mode=OneWay}"
-                            Foreground="#C8ACD6"
-                            FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
-                            FontSize="13"
-                            MaxLines="1"
-                            TextTrimming="CharacterEllipsis"
-                            VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
+                    Visibility="{x:Bind ViewModel.PinnedMessage, Mode=OneWay, Converter={StaticResource NullToVisibility}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Button
+                        Grid.Column="0"
+                        Command="{x:Bind ViewModel.ScrollToMessageCommand}"
+                        CommandParameter="{x:Bind ViewModel.PinnedMessage.Id, Mode=OneWay}"
+                        Background="Transparent"
+                        Foreground="#C8ACD6"
+                        BorderThickness="0"
+                        Padding="14,8"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock
+                                Text="📌"
+                                FontSize="13"
+                                VerticalAlignment="Center" />
+                            <StackPanel Spacing="1" VerticalAlignment="Center">
+                                <TextBlock
+                                    Text="{x:Bind ViewModel.PinnedMessage.Content, Mode=OneWay}"
+                                    Foreground="#C8ACD6"
+                                    FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                                    FontSize="13"
+                                    MaxLines="1"
+                                    TextTrimming="CharacterEllipsis" />
+                                <TextBlock
+                                    Text="{x:Bind ViewModel.PinnedMessageExpiryLabel, Mode=OneWay}"
+                                    Foreground="#C8ACD6"
+                                    FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                                    FontSize="11"
+                                    Opacity="0.75"
+                                    Visibility="{x:Bind ViewModel.PinnedMessageExpiryLabel, Mode=OneWay, Converter={StaticResource NullToVisibility}}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+
+                    <Button
+                        Grid.Column="1"
+                        Content="Unpin"
+                        Command="{x:Bind ViewModel.UnpinMessageCommand}"
+                        Background="Transparent"
+                        Foreground="#C8ACD6"
+                        BorderBrush="#C8ACD6"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="10,4"
+                        Margin="0,0,10,0"
+                        VerticalAlignment="Center" />
+                </Grid>
             </Grid>
 
             <!-- Reply Context Strip -->

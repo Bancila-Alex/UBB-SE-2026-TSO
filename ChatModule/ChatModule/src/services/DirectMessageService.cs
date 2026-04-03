@@ -12,6 +12,7 @@ namespace ChatModule.Services
     {
         private readonly ConversationRepository _conversationRepository;
         private readonly ParticipantRepository _participantRepository;
+        private readonly MessageRepository _messageRepository;
         private readonly BlockService _blockService;
         private readonly UserRepository _userRepository;
 
@@ -19,11 +20,13 @@ namespace ChatModule.Services
             ConversationRepository conversationRepository,
             ParticipantRepository participantRepository,
             FriendRepository friendRepository,
-            UserRepository userRepository)
+            UserRepository userRepository,
+            MessageRepository messageRepository)
         {
             _conversationRepository = conversationRepository;
             _participantRepository = participantRepository;
             _userRepository = userRepository;
+            _messageRepository = messageRepository;
             _blockService = new BlockService(friendRepository, userRepository);
         }
 
@@ -104,6 +107,80 @@ namespace ChatModule.Services
             }
 
             return await _userRepository.GetByIdAsync(otherParticipant.UserId);
+        }
+
+        public async Task<(Message Pinned, Message Notice)> PinMessageAsync(Guid conversationId, Guid requesterId, Guid messageId, DateTime expiresAt)
+        {
+            var participants = await _participantRepository.GetAllForConversationAsync(conversationId);
+            if (!participants.Any(p => p.UserId == requesterId))
+                throw new InvalidOperationException("You are not a participant in this conversation.");
+
+            var message = await _messageRepository.GetByIdAsync(messageId)
+                ?? throw new InvalidOperationException("Message not found.");
+
+            if (message.ConversationId != conversationId)
+                throw new InvalidOperationException("Message does not belong to this conversation.");
+
+            // Clear PinExpiresAt on any previously pinned message
+            var conversation = await _conversationRepository.GetByIdAsync(conversationId);
+            if (conversation?.PinnedMessageId != null && conversation.PinnedMessageId != messageId)
+            {
+                await _messageRepository.SetPinExpiresAtAsync(conversation.PinnedMessageId.Value, null);
+            }
+
+            await _conversationRepository.SetPinnedMessageAsync(conversationId, messageId);
+            await _messageRepository.SetPinExpiresAtAsync(messageId, expiresAt);
+            message.PinExpiresAt = expiresAt;
+
+            var user = await _userRepository.GetByIdAsync(requesterId);
+            var username = user?.Username ?? "Someone";
+            var notice = await WriteSystemMessageAsync(conversationId, $"{username} pinned a message.");
+
+            return (message, notice);
+        }
+
+        public async Task<Message> UnpinMessageAsync(Guid conversationId, Guid requesterId)
+        {
+            var participants = await _participantRepository.GetAllForConversationAsync(conversationId);
+            if (!participants.Any(p => p.UserId == requesterId))
+                throw new InvalidOperationException("You are not a participant in this conversation.");
+
+            var conversation = await _conversationRepository.GetByIdAsync(conversationId);
+            if (conversation?.PinnedMessageId != null)
+            {
+                await _messageRepository.SetPinExpiresAtAsync(conversation.PinnedMessageId.Value, null);
+            }
+
+            await _conversationRepository.SetPinnedMessageAsync(conversationId, null);
+
+            var user = await _userRepository.GetByIdAsync(requesterId);
+            var username = user?.Username ?? "Someone";
+            return await WriteSystemMessageAsync(conversationId, $"{username} unpinned a message.");
+        }
+
+        public async Task ClearExpiredPinAsync(Guid conversationId, Guid pinnedMessageId)
+        {
+            await _messageRepository.SetPinExpiresAtAsync(pinnedMessageId, null);
+            await _conversationRepository.SetPinnedMessageAsync(conversationId, null);
+        }
+
+        private async Task<Message> WriteSystemMessageAsync(Guid conversationId, string text)
+        {
+            var notice = new Message
+            {
+                Id = Guid.NewGuid(),
+                ConversationId = conversationId,
+                UserId = null,
+                Content = text,
+                CreatedAt = DateTime.UtcNow,
+                ReplyToId = null,
+                IsEdited = false,
+                IsDeleted = false,
+                MessageType = MessageType.System,
+                ParentMessageId = null
+            };
+            await _messageRepository.CreateAsync(notice);
+            return notice;
         }
     }
 }

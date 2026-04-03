@@ -20,6 +20,7 @@ namespace ChatModule.src.views
             ViewModel = viewModel;
             InitializeComponent();
             ViewModel.RequestEmojiAsync = RequestEmojiAsync;
+            ViewModel.RequestPinExpiryAsync = RequestPinExpiryAsync;
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
@@ -235,6 +236,108 @@ namespace ChatModule.src.views
             }
 
             return string.IsNullOrWhiteSpace(selected) ? list.SelectedItem as string : selected;
+        }
+
+        private async System.Threading.Tasks.Task<DateTime?> RequestPinExpiryAsync()
+        {
+            if (XamlRoot == null)
+                return null;
+
+            var rb1Week = new RadioButton
+            {
+                Content = "1 Week",
+                IsChecked = true,
+                Foreground = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 200, 172, 214))
+            };
+            var rb2Weeks = new RadioButton
+            {
+                Content = "2 Weeks",
+                Foreground = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 200, 172, 214))
+            };
+            var rb1Month = new RadioButton
+            {
+                Content = "1 Month",
+                Foreground = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 200, 172, 214))
+            };
+            var rbCustom = new RadioButton
+            {
+                Content = "Custom",
+                Foreground = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 200, 172, 214))
+            };
+
+            var datePicker = new CalendarDatePicker
+            {
+                PlaceholderText = "Select date",
+                MinDate = DateTimeOffset.UtcNow.AddDays(1),
+                Visibility = Visibility.Collapsed,
+                Margin = new Thickness(0, 8, 0, 0)
+            };
+            var timePicker = new TimePicker
+            {
+                Visibility = Visibility.Collapsed,
+                Margin = new Thickness(0, 4, 0, 0)
+            };
+
+            rbCustom.Checked += (_, _) =>
+            {
+                datePicker.Visibility = Visibility.Visible;
+                timePicker.Visibility = Visibility.Visible;
+            };
+            rb1Week.Checked += (_, _) =>
+            {
+                datePicker.Visibility = Visibility.Collapsed;
+                timePicker.Visibility = Visibility.Collapsed;
+            };
+            rb2Weeks.Checked += (_, _) =>
+            {
+                datePicker.Visibility = Visibility.Collapsed;
+                timePicker.Visibility = Visibility.Collapsed;
+            };
+            rb1Month.Checked += (_, _) =>
+            {
+                datePicker.Visibility = Visibility.Collapsed;
+                timePicker.Visibility = Visibility.Collapsed;
+            };
+
+            var panel = new StackPanel { Spacing = 6 };
+            panel.Children.Add(rb1Week);
+            panel.Children.Add(rb2Weeks);
+            panel.Children.Add(rb1Month);
+            panel.Children.Add(rbCustom);
+            panel.Children.Add(datePicker);
+            panel.Children.Add(timePicker);
+
+            var dialog = new ContentDialog
+            {
+                Title = "Pin duration",
+                Content = panel,
+                PrimaryButtonText = "Pin",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = XamlRoot
+            };
+
+            var result = await dialog.ShowAsync();
+            if (result != ContentDialogResult.Primary)
+                return null;
+
+            if (rb1Week.IsChecked == true)
+                return DateTime.UtcNow.AddDays(7);
+            if (rb2Weeks.IsChecked == true)
+                return DateTime.UtcNow.AddDays(14);
+            if (rb1Month.IsChecked == true)
+                return DateTime.UtcNow.AddDays(30);
+
+            // Custom
+            if (datePicker.Date == null)
+                return DateTime.UtcNow.AddDays(7);
+
+            var chosen = datePicker.Date.Value.Date + timePicker.Time;
+            var chosenUtc = DateTime.SpecifyKind(chosen, DateTimeKind.Local).ToUniversalTime();
+            if (chosenUtc <= DateTime.UtcNow)
+                chosenUtc = DateTime.UtcNow.AddDays(7);
+
+            return chosenUtc;
         }
 
         private async System.Threading.Tasks.Task ShowInfoDialogAsync(string title, string body)
