@@ -406,6 +406,22 @@ ORDER BY Participant.UserId;";
             await command.ExecuteNonQueryAsync();
         }
 
+        public async Task UnsoftDeleteAsync(Guid id)
+        {
+            await using var connection = new SqlConnection(_db.ConnectionString);
+            await connection.OpenAsync();
+
+            const string sql = @"
+            UPDATE Messages
+            SET IsDeleted = 0
+            WHERE Id = @Id;";
+
+            await using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@Id", id);
+
+            await command.ExecuteNonQueryAsync();
+        }
+
         private static Message MapMessage(SqlDataReader reader)
         {
             var idOrdinal = reader.GetOrdinal("Id");

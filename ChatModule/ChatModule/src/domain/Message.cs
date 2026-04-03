@@ -26,5 +26,6 @@ namespace ChatModule.Models
         public int ReadByCount { get; set; }
         public string? ReadReceiptLabel { get; set; }
         public bool ShowUnreadSeparator { get; set; }
+        public string? AttachmentImagePath { get; set; }
     }
 }

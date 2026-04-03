@@ -358,15 +358,13 @@ namespace ChatModule.src.view_models
                 var content = MessageInput;
                 if (!string.IsNullOrWhiteSpace(SelectedAttachmentPath))
                 {
-                    var attachmentLine = $"[File] {SelectedAttachmentPath}";
-                    content = string.IsNullOrWhiteSpace(content)
-                        ? attachmentLine
-                        : $"{content}{Environment.NewLine}{attachmentLine}";
+                    content = string.IsNullOrWhiteSpace(content) ? "[Attachment]" : content;
                 }
                 var replyToId = ReplyingTo?.Id;
 
                 var message = await _messageService.SendMessageAsync(ConversationId, _currentUserId, content, replyToId);
                 message.IsMine = true;
+                message.AttachmentImagePath = SelectedAttachmentPath;
                 Messages.Add(message);
                 await PopulateReadReceiptMetadataAsync();
                 await UpdateUnreadSeparatorAsync();
@@ -587,6 +585,15 @@ namespace ChatModule.src.view_models
                     message.ReactionCounts.Clear();
                     Messages[index] = message;
                     continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(message.Content) && message.Content.StartsWith("[Image] ", StringComparison.Ordinal))
+                {
+                    message.AttachmentImagePath = message.Content.Substring("[Image] ".Length);
+                }
+                else
+                {
+                    message.AttachmentImagePath = null;
                 }
 
                 var reactions = await _interactionService.GetReactionsAsync(message.Id);

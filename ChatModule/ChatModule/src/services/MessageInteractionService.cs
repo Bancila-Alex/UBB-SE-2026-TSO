@@ -42,10 +42,17 @@ namespace ChatModule.Services
 
             await RequireCanSendAsync(message.ConversationId, userId);
             var existingReactions = await _messageRepo.GetReactionsForMessageAsync(messageId);
-            if (existingReactions.Any(r => r.UserId == userId))
+            var existingActive = existingReactions.FirstOrDefault(r => r.UserId == userId && !r.IsDeleted);
+            var existingDeleted = existingReactions.FirstOrDefault(r => r.UserId == userId && r.IsDeleted);
+
+            if (existingActive != null)
             {
-                var existing = existingReactions.First(r => r.UserId == userId);
-                await _messageRepo.UpdateContentAsync(existing.Id, emoji);
+                await _messageRepo.UpdateContentAsync(existingActive.Id, emoji);
+            }
+            else if (existingDeleted != null)
+            {
+                await _messageRepo.UpdateContentAsync(existingDeleted.Id, emoji);
+                await _messageRepo.UnsoftDeleteAsync(existingDeleted.Id);
             }
             else await _messageRepo.CreateAsync(new Message
             {
@@ -68,9 +75,9 @@ namespace ChatModule.Services
                 ?? throw new InvalidOperationException("Message not found.");
             await RequireCanSendAsync(message.ConversationId, userId);
             var existingReactions = await _messageRepo.GetReactionsForMessageAsync(messageId);
-            if (existingReactions.Any(r => r.UserId == userId))
+            if (existingReactions.Any(r => r.UserId == userId && !r.IsDeleted))
             {
-                var existing = existingReactions.First(r => r.UserId == userId);
+                var existing = existingReactions.First(r => r.UserId == userId && !r.IsDeleted);
                 await _messageRepo.SoftDeleteAsync(existing.Id);
             }
             else

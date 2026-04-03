@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
 using Windows.Storage.Pickers;
 
@@ -106,6 +107,21 @@ namespace ChatModule.src.views
             var file = await picker.PickSingleFileAsync();
             if (file != null)
             {
+                var ext = Path.GetExtension(file.Name)?.ToLowerInvariant();
+                if (ext != ".png" && ext != ".jpg" && ext != ".jpeg")
+                {
+                    await ShowInfoDialogAsync("Attachment", "Only PNG and JPEG images are supported.");
+                    return;
+                }
+
+                var props = await file.GetBasicPropertiesAsync();
+                const ulong maxSize = 6UL * 1024UL * 1024UL;
+                if (props.Size > maxSize)
+                {
+                    await ShowInfoDialogAsync("Attachment", "Image size must be 6MB or less.");
+                    return;
+                }
+
                 await ViewModel.SetAttachmentAsync(file.Path);
             }
         }
@@ -181,6 +197,24 @@ namespace ChatModule.src.views
             }
 
             return string.IsNullOrWhiteSpace(selected) ? list.SelectedItem as string : selected;
+        }
+
+        private async System.Threading.Tasks.Task ShowInfoDialogAsync(string title, string body)
+        {
+            if (XamlRoot == null)
+            {
+                return;
+            }
+
+            var dialog = new ContentDialog
+            {
+                Title = title,
+                Content = body,
+                CloseButtonText = "Close",
+                XamlRoot = XamlRoot
+            };
+
+            _ = await dialog.ShowAsync();
         }
     }
 }

@@ -116,6 +116,13 @@
                             TextWrapping="Wrap"
                             Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
 
+                        <Image
+                            Source="{Binding AttachmentImagePath, Converter={StaticResource StringToImageSource}}"
+                            MaxWidth="300"
+                            MaxHeight="220"
+                            Stretch="UniformToFill"
+                            Visibility="{Binding AttachmentImagePath, Converter={StaticResource NullToVisibility}}" />
+
                         <TextBlock
                             Text="This message was deleted"
                             Foreground="#C8ACD6"
