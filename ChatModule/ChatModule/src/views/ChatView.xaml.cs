@@ -76,6 +76,8 @@ namespace ChatModule.src.views
                         _ = ViewModel.MarkVisibleMessagesAsReadAsync(newMessage.Id);
                     }
                 }
+
+                ScrollToBottom();
             }
         }
 
@@ -86,6 +88,17 @@ namespace ChatModule.src.views
             {
                 MessagesList.ScrollIntoView(target);
             }
+        }
+
+        private void ScrollToBottom()
+        {
+            if (ViewModel.Messages.Count == 0)
+            {
+                return;
+            }
+
+            var last = ViewModel.Messages[^1];
+            MessagesList.ScrollIntoView(last);
         }
 
         private async void OnLeaveGroupClicked(object sender, RoutedEventArgs e)

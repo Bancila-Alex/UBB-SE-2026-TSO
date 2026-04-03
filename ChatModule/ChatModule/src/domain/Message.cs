@@ -28,5 +28,9 @@ namespace ChatModule.Models
         public bool ShowUnreadSeparator { get; set; }
         public string? AttachmentImagePath { get; set; }
         public string? ReplyPreviewText { get; set; }
+        public string? ReplyPreviewSender { get; set; }
+        public string? ReplyPreviewContent { get; set; }
+        public bool CanEdit { get; set; }
+        public bool CanDelete { get; set; }
     }
 }

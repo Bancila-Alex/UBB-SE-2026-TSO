@@ -120,6 +120,38 @@ namespace ChatModule.Services
             return $"{senderName}: {contentPreview}";
         }
 
+        public async Task<(string Sender, string Content)?> BuildReplyPreviewPartsAsync(Guid messageId)
+        {
+            var message = await _messageRepo.GetByIdAsync(messageId)
+                ?? throw new InvalidOperationException("Message not found.");
+
+            if (message.IsDeleted)
+            {
+                return ("Deleted", "This message has been deleted.");
+            }
+
+            if (message.MessageType == MessageType.Reaction)
+            {
+                return ("Reaction", "This is a reaction and cannot be previewed.");
+            }
+
+            var senderName = "Unknown User";
+            if (message.UserId.HasValue)
+            {
+                var user = await _userRepo.GetByIdAsync(message.UserId.Value);
+                if (user != null)
+                {
+                    senderName = user.Username;
+                }
+            }
+
+            var contentPreview = message.Content != null
+                ? (message.Content.Length > 100 ? message.Content.Substring(0, 100) + "..." : message.Content)
+                : "[No Text]";
+
+            return (senderName, contentPreview);
+        }
+
         private async Task<Participant> RequireActiveParticipantAsync(Guid conversationId, Guid userId)
         {
             var participant = await _participantRepo.GetAsync(conversationId, userId);

@@ -117,7 +117,6 @@
                             Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
 
                         <Button
-                            Content="{Binding ReplyPreviewText}"
                             Tag="{Binding ReplyToId}"
                             Tapped="OnReplyPreviewTapped"
                             Background="#433D8B"
@@ -127,7 +126,25 @@
                             Padding="8,5"
                             HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Left"
-                            Visibility="{Binding ReplyPreviewText, Converter={StaticResource NullToVisibility}}" />
+                            Visibility="{Binding ReplyPreviewText, Converter={StaticResource NullToVisibility}}">
+                            <StackPanel Spacing="1">
+                                <TextBlock
+                                    Text="{Binding ReplyPreviewSender}"
+                                    Foreground="#C8ACD6"
+                                    FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
+                                    FontSize="12"
+                                    FontWeight="SemiBold"
+                                    TextTrimming="CharacterEllipsis" />
+                                <TextBlock
+                                    Text="{Binding ReplyPreviewContent}"
+                                    Foreground="#C8ACD6"
+                                    Opacity="0.9"
+                                    FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                                    FontSize="12"
+                                    MaxLines="1"
+                                    TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Button>
 
                         <Image
                             Source="{Binding AttachmentImagePath, Converter={StaticResource StringToImageSource}}"
@@ -184,6 +201,19 @@
                                 Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
 
                             <Button
+                                Content="Edit"
+                                Command="{Binding ElementName=RootControl, Path=ViewModel.EditMessageCommand}"
+                                CommandParameter="{Binding Id}"
+                                Background="Transparent"
+                                Foreground="#C8ACD6"
+                                BorderBrush="#433D8B"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="8,3"
+                                HorizontalAlignment="Left"
+                                Visibility="{Binding CanEdit, Converter={StaticResource BoolToVisibility}}" />
+
+                            <Button
                                 Content="Delete"
                                 Command="{Binding ElementName=RootControl, Path=ViewModel.DeleteMessageCommand}"
                                 CommandParameter="{Binding Id}"
@@ -194,7 +224,7 @@
                                 CornerRadius="10"
                                 Padding="8,3"
                                 HorizontalAlignment="Left"
-                                Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
+                                Visibility="{Binding CanDelete, Converter={StaticResource BoolToVisibility}}" />
                         </StackPanel>
 
                         <Button

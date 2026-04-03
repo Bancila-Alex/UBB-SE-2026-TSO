@@ -625,12 +625,28 @@ namespace ChatModule.src.view_models
         {
             foreach (var message in Messages)
             {
+                ApplyMessageActions(message);
+
                 if (message.ReplyToId.HasValue)
                 {
-                    message.ReplyPreviewText = await _interactionService.BuildReplyPreviewAsync(message.ReplyToId.Value);
+                    var parts = await _interactionService.BuildReplyPreviewPartsAsync(message.ReplyToId.Value);
+                    if (parts.HasValue)
+                    {
+                        message.ReplyPreviewSender = parts.Value.Sender;
+                        message.ReplyPreviewContent = parts.Value.Content;
+                        message.ReplyPreviewText = $"{parts.Value.Sender}: {parts.Value.Content}";
+                    }
+                    else
+                    {
+                        message.ReplyPreviewSender = null;
+                        message.ReplyPreviewContent = null;
+                        message.ReplyPreviewText = null;
+                    }
                 }
                 else
                 {
+                    message.ReplyPreviewSender = null;
+                    message.ReplyPreviewContent = null;
                     message.ReplyPreviewText = null;
                 }
             }
@@ -997,6 +1013,16 @@ namespace ChatModule.src.view_models
 
             message.AttachmentImagePath = imagePath;
             message.Content = split.Length > 1 ? split[1] : string.Empty;
+        }
+
+        private void ApplyMessageActions(Message message)
+        {
+            var mine = message.UserId.HasValue && message.UserId.Value == _currentUserId;
+            var editableType = message.MessageType == MessageType.Text;
+            var notDeleted = !message.IsDeleted;
+
+            message.CanDelete = mine && notDeleted;
+            message.CanEdit = mine && notDeleted && editableType;
         }
     }
 }
