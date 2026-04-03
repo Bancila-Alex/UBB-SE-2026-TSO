@@ -121,6 +121,7 @@ namespace ChatModule.src.view_models
 
         public event Action<Guid>? ScrollToMessageRequested;
         public event Action<string>? ReadReceiptDetailsRequested;
+        public event Action<Guid>? ReplyPreviewTapped;
         public event Action? LeaveGroupRequested;
         public event Action? SetNicknameRequested;
         public event Action? ClearNicknameRequested;
@@ -256,6 +257,7 @@ namespace ChatModule.src.view_models
                 _hasMoreMessages = messages.Count >= PageSize;
 
                 await PopulateReactionCountersAsync();
+                await PopulateReplyPreviewsAsync();
 
                 var conversation = await _conversationRepository.GetByIdAsync(conversationId);
                 IsConversationGroup = conversation?.Type == ConversationType.Group;
@@ -424,6 +426,7 @@ namespace ChatModule.src.view_models
                 _hasMoreMessages = older.Count >= PageSize;
 
                 await PopulateReactionCountersAsync();
+                await PopulateReplyPreviewsAsync();
                 await PopulateReadReceiptMetadataAsync();
                 await UpdateUnreadSeparatorAsync();
             }
@@ -541,6 +544,7 @@ namespace ChatModule.src.view_models
                 ReactionsChanged?.Invoke(messageId, reactions);
 
                 await PopulateReactionCountersAsync();
+                await PopulateReplyPreviewsAsync();
             }
             catch (Exception ex)
             {
@@ -551,6 +555,16 @@ namespace ChatModule.src.view_models
         private Task ScrollToMessageAsync(Guid messageId)
         {
             ScrollToMessageRequested?.Invoke(messageId);
+            return Task.CompletedTask;
+        }
+
+        public Task OpenReplyTargetAsync(Guid replyToId)
+        {
+            if (replyToId != Guid.Empty)
+            {
+                ReplyPreviewTapped?.Invoke(replyToId);
+            }
+
             return Task.CompletedTask;
         }
 
@@ -607,6 +621,23 @@ namespace ChatModule.src.view_models
             OnPropertyChanged(nameof(Messages));
         }
 
+        private async Task PopulateReplyPreviewsAsync()
+        {
+            foreach (var message in Messages)
+            {
+                if (message.ReplyToId.HasValue)
+                {
+                    message.ReplyPreviewText = await _interactionService.BuildReplyPreviewAsync(message.ReplyToId.Value);
+                }
+                else
+                {
+                    message.ReplyPreviewText = null;
+                }
+            }
+
+            OnPropertyChanged(nameof(Messages));
+        }
+
         private async Task ReactWithSpecificEmojiAsync(Tuple<Guid, string> payload)
         {
             ErrorMessage = null;
@@ -623,6 +654,7 @@ namespace ChatModule.src.view_models
             ReactionsChanged?.Invoke(messageId, reactions);
 
             await PopulateReactionCountersAsync();
+            await PopulateReplyPreviewsAsync();
         }
 
         private async Task ToggleReactionCounterAsync(Guid messageId)

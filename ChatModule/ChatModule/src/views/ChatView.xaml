@@ -116,6 +116,19 @@
                             TextWrapping="Wrap"
                             Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
 
+                        <Button
+                            Content="{Binding ReplyPreviewText}"
+                            Tag="{Binding ReplyToId}"
+                            Tapped="OnReplyPreviewTapped"
+                            Background="#433D8B"
+                            Foreground="#C8ACD6"
+                            BorderThickness="0"
+                            CornerRadius="6"
+                            Padding="8,5"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            Visibility="{Binding ReplyPreviewText, Converter={StaticResource NullToVisibility}}" />
+
                         <Image
                             Source="{Binding AttachmentImagePath, Converter={StaticResource StringToImageSource}}"
                             MaxWidth="300"

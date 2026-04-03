@@ -25,6 +25,7 @@ namespace ChatModule.src.views
             Unloaded += OnUnloaded;
             ViewModel.ScrollToMessageRequested += OnScrollToMessageRequested;
             ViewModel.ReadReceiptDetailsRequested += OnReadReceiptDetailsRequested;
+            ViewModel.ReplyPreviewTapped += OnReplyPreviewTappedByViewModel;
             ViewModel.Messages.CollectionChanged += OnMessagesCollectionChanged;
         }
 
@@ -38,6 +39,7 @@ namespace ChatModule.src.views
         {
             ViewModel.ScrollToMessageRequested -= OnScrollToMessageRequested;
             ViewModel.ReadReceiptDetailsRequested -= OnReadReceiptDetailsRequested;
+            ViewModel.ReplyPreviewTapped -= OnReplyPreviewTappedByViewModel;
             ViewModel.Messages.CollectionChanged -= OnMessagesCollectionChanged;
             Loaded -= OnLoaded;
             Unloaded -= OnUnloaded;
@@ -147,6 +149,19 @@ namespace ChatModule.src.views
             {
                 await ViewModel.ShowReadReceiptDetailsAsync(messageId);
             }
+        }
+
+        private async void OnReplyPreviewTapped(object sender, TappedRoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is Guid replyToId && replyToId != Guid.Empty)
+            {
+                await ViewModel.OpenReplyTargetAsync(replyToId);
+            }
+        }
+
+        private void OnReplyPreviewTappedByViewModel(Guid replyToId)
+        {
+            OnScrollToMessageRequested(replyToId);
         }
 
         private async void OnReadReceiptDetailsRequested(string body)
